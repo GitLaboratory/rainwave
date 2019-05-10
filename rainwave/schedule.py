@@ -359,7 +359,7 @@ def manage_next(sid):
             log.debug(
                 "timing", "SID %s <20 seconds to upnext event, not using timing." % sid
             )
-        if time_to_future_producer < 40:
+        elif time_to_future_producer < 40:
             target_length = time_to_future_producer
             next_producer = rainwave.events.shortest_election.ShortestElectionProducer(
                 sid
