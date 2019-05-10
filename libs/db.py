@@ -26,7 +26,7 @@ class PostgresCursor(psycopg2.extras.RealDictCursor):
 		# Either I can use this small inefficiency here or for fetching rows
 		# and entire queries I can convert each row into a dict manually.
 		# This has a smaller penalty.
-		return r[r.keys()[0]]
+		return r[list(r.keys())[0]]
 
 	def fetch_row(self, query, params = None):
 		self.execute(query, params)
@@ -46,7 +46,7 @@ class PostgresCursor(psycopg2.extras.RealDictCursor):
 			return []
 		arr = []
 		row = self.fetchone()
-		col = row.keys()[0]
+		col = list(row.keys())[0]
 		arr.append(row[col])
 		for row in self.fetchall():
 			arr.append(row[col])
@@ -144,7 +144,7 @@ class SQLiteCursor(object):
 		row = self.cur.fetchone()
 		if not row:
 			return None
-		return row[row.keys()[0]]
+		return row[list(row.keys())[0]]
 
 	def fetch_row(self, query, params = None):
 		self.execute(query, params)
@@ -162,7 +162,7 @@ class SQLiteCursor(object):
 		self.execute(query, params)
 		arr = []
 		for row in self.cur.fetchall():
-			arr.append(row[row.keys()[0]])
+			arr.append(row[list(row.keys())[0]])
 		return arr
 
 	def update(self, query, params = None):
@@ -173,9 +173,9 @@ class SQLiteCursor(object):
 		if self.print_next:
 			self.print_next = False
 			if params:
-				print self._convert_pg_query(query, True) % params
+				print(self._convert_pg_query(query, True) % params)
 			else:
-				print self._convert_pg_query(query, True)
+				print(self._convert_pg_query(query, True))
 		query = self._convert_pg_query(query)
 		# If the query can't be done or properly to SQLite,
 		# silently drop it.  This is mostly for table creation, things like foreign keys.
@@ -290,9 +290,9 @@ def create_tables():
 		try:
 			c.update("CREATE EXTENSION pg_trgm")
 		except:
-			print "Could not create trigram extension."
-			print "Please run 'CREATE EXTENSION pg_trgm;' as a superuser on the database."
-			print "You may also need to install the Postgres Contributions package. (postgres-contrib)"
+			print("Could not create trigram extension.")
+			print("Please run 'CREATE EXTENSION pg_trgm;' as a superuser on the database.")
+			print("You may also need to install the Postgres Contributions package. (postgres-contrib)")
 			raise
 
 	# From: https://wiki.postgresql.org/wiki/First_%28aggregate%29

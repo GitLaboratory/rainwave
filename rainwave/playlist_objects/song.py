@@ -31,7 +31,7 @@ num_origin_songs = {}
 
 def set_umask():
     os.setpgrp()
-    os.umask(002)
+    os.umask(0o02)
 
 def zip_metadata(tag_metadata, kept_metadata):
 	new_metadata = copy.copy(tag_metadata)
@@ -210,57 +210,57 @@ class Song(object):
 			raise PassableScanError("Song filename \"%s\" has no tags." % filename)
 
 		w = f.tags.getall('TIT2')
-		if len(w) > 0 and len(unicode(w[0])) > 0:
-			self.data['title'] = unicode(w[0]).strip()
+		if len(w) > 0 and len(str(w[0])) > 0:
+			self.data['title'] = str(w[0]).strip()
 		else:
 			raise PassableScanError("Song filename \"%s\" has no title tag." % filename)
 		w = f.tags.getall('TPE1')
-		if len(w) > 0 and len(unicode(w[0])) > 0:
-			self.artist_tag = unicode(w[0])
+		if len(w) > 0 and len(str(w[0])) > 0:
+			self.artist_tag = str(w[0])
 		else:
 			raise PassableScanError("Song filename \"%s\" has no artist tag." % filename)
 		w = f.tags.getall('TALB')
-		if len(w) > 0 and len(unicode(w[0]).strip()) > 0:
-			self.album_tag = unicode(w[0]).strip()
+		if len(w) > 0 and len(str(w[0]).strip()) > 0:
+			self.album_tag = str(w[0]).strip()
 		else:
 			raise PassableScanError("Song filename \"%s\" has no album tag." % filename)
 		if config.get("scanner_use_tracknumbers"):
 			w = f.tags.getall('TRCK')
 			if w is not None and len(w) > 0:
 				try:
-					self.data['track_number'] = fieldtypes.integer(unicode(w[0]))
+					self.data['track_number'] = fieldtypes.integer(str(w[0]))
 				except ValueError:
 					pass
 			w = f.tags.getall('TPOS')
 			if w is not None and len(w) > 0:
 				try:
-					self.data['disc_number'] = fieldtypes.integer(unicode(w[0]))
+					self.data['disc_number'] = fieldtypes.integer(str(w[0]))
 				except ValueError:
 					pass
 		w = f.tags.getall('TCON')
-		if len(w) > 0 and len(unicode(w[0])) > 0:
-			self.genre_tag = unicode(w[0])
+		if len(w) > 0 and len(str(w[0])) > 0:
+			self.genre_tag = str(w[0])
 		w = f.tags.getall('COMM')
-		if len(w) > 0 and len(unicode(w[0])) > 0:
-			self.data['link_text'] = unicode(w[0]).strip()
+		if len(w) > 0 and len(str(w[0])) > 0:
+			self.data['link_text'] = str(w[0]).strip()
 		# what the heck is pylint code w0511?  a warning with X X X
 		# even happens on comments.
 		# guess it hates porn but that's what the ID3 wildcard tag is!
 		w = f.tags.getall('WXXX')	#pylint: disable=W0511
-		if len(w) > 0 and len(unicode(w[0])) > 0:
-			self.data['url'] = unicode(w[0]).strip()
+		if len(w) > 0 and len(str(w[0])) > 0:
+			self.data['url'] = str(w[0]).strip()
 		else:
 			self.data['url'] = None
 		w = f.tags.getall('TYER')
 		if w is not None and len(w) > 0:
 			try:
-				self.data['year'] = fieldtypes.integer(unicode(w[0]))
+				self.data['year'] = fieldtypes.integer(str(w[0]))
 			except ValueError:
 				pass
 		w = f.tags.getall('TDRC')
 		if self.data['year'] is None and w is not None and len(w) > 0:
 			try:
-				self.data['year'] = fieldtypes.integer(unicode(w[0]))
+				self.data['year'] = fieldtypes.integer(str(w[0]))
 			except ValueError:
 				pass
 
@@ -404,7 +404,7 @@ class Song(object):
 				metadata.reconcile_sids()
 
 	def _assign_from_dict(self, d):
-		for key, val in d.iteritems():
+		for key, val in d.items():
 			if key.find("song_") == 0:
 				key = key[5:]
 			# Skip any album-related values

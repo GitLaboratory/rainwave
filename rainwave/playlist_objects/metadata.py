@@ -3,8 +3,8 @@ from libs import db
 from unidecode import unidecode
 
 def make_searchable_string(s):
-	if not isinstance(s, unicode):
-		s = unicode(s)
+	if not isinstance(s, str):
+		s = str(s)
 	s = unidecode(s).lower()
 	return ''.join(e for e in s if (e.isalnum() or e == ' '))
 
@@ -99,17 +99,17 @@ class AssociatedMetadata(object):
 	def _assign_from_dict(self, d):
 		self.id = d["id"]
 		self.data['name'] = d["name"]
-		if d.has_key("is_tag"):
+		if "is_tag" in d:
 			self.is_tag = d["is_tag"]
-		if d.has_key("elec_block") and d['elec_block'] is not None:
+		if "elec_block" in d and d['elec_block'] is not None:
 			self.elec_block = d["elec_block"]
-		if d.has_key("cool_time") and d['cool_time'] is not None:
+		if "cool_time" in d and d['cool_time'] is not None:
 			self.cool_time = d["cool_time"]
-		if d.has_key("cool_override") and d['cool_override'] is not None:
+		if "cool_override" in d and d['cool_override'] is not None:
 			self.cool_time = d['cool_override']
-		if d.has_key("name_searchable"):
+		if "name_searchable" in d:
 			self.data['name_searchable'] = d['name_searchable']
-		if d.has_key("order"):
+		if "order" in d:
 			self.data['order'] = d['order']
 
 	def save(self):

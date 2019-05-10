@@ -1,7 +1,7 @@
 import sys
 import os
-import httplib
-import urllib
+import http.client
+import urllib.request, urllib.parse, urllib.error
 import time
 import traceback
 
@@ -227,8 +227,8 @@ class APIServer(object):
 			time.sleep(1)
 			return self._run_tests()
 		elif task_id == None:
-			print
-			print "OK."
+			print()
+			print("OK.")
 			return True
 		return False
 
@@ -253,8 +253,8 @@ class APIServer(object):
 						# need an anon user/key added to params here
 						pass
 				params['sid'] = 1
-				params = urllib.urlencode(params)
-				conn = httplib.HTTPConnection('localhost', config.get("api_base_port"))
+				params = urllib.parse.urlencode(params)
+				conn = http.client.HTTPConnection('localhost', config.get("api_base_port"))
 
 				conn.request(request_pair['method'], "/api/%s" % request.url, params, headers)
 				response = conn.getresponse()
@@ -269,29 +269,29 @@ class APIServer(object):
 
 					if not dict_compare.print_differences(ref_data, web_data):
 						response_pass = False
-						print "JSON from server:"
-						print json.dumps(web_data, ensure_ascii=False, indent=4)
-						print
+						print("JSON from server:")
+						print(json.dumps(web_data, ensure_ascii=False, indent=4))
+						print()
 				else:
 					response_pass = False
 				if not response_pass:
 					passed = False
-					print
-					print "*** ERROR:", request.url, ": Response status", response.status
+					print()
+					print("*** ERROR:", request.url, ": Response status", response.status)
 			except:
-				print
+				print()
 				traceback.print_exc(file=sys.stdout)
-				print "*** ERROR:", request.url, ": ", sys.exc_info()[0]
+				print("*** ERROR:", request.url, ": ", sys.exc_info()[0])
 				passed = False
-				print
+				print()
 
-		conn = httplib.HTTPConnection('localhost', config.get("api_base_port"))
+		conn = http.client.HTTPConnection('localhost', config.get("api_base_port"))
 		conn.request("GET", "/api/shutdown", params, headers)
 		conn.getresponse()
 		time.sleep(3)
 
-		print
-		print "----------------------------------------------------------------------"
-		print "Ran %s tests." % len(testable_requests)
+		print()
+		print("----------------------------------------------------------------------")
+		print("Ran %s tests." % len(testable_requests))
 
 		return passed

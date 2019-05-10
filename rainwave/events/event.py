@@ -12,7 +12,7 @@ def register_producer(cls):
 
 def get_admin_creatable_producers():
 	types = []
-	for key in all_producers.keys():
+	for key in list(all_producers.keys()):
 		if ((key != "ShortestElectionProducer") and
 	#			(key != "ElectionProducer") and
 				(key != "OneUpProducer")):

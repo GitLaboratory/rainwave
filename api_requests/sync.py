@@ -5,7 +5,7 @@ import datetime
 import numbers
 import sys
 import uuid
-import urlparse
+import urllib.parse
 from time import time as timestamp
 
 try:
@@ -66,7 +66,7 @@ class SessionBank(object):
 			self.sessions.remove(session)
 
 	def clear(self):
-		for timer in self.throttled.itervalues():
+		for timer in self.throttled.values():
 			tornado.ioloop.IOLoop.instance().remove_timeout(timer)
 		self.sessions[:] = []
 		self.throttled.clear()
@@ -408,7 +408,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 	def check_origin(self, origin):
 		if websocket_allow_from == "*":
 			return True
-		parsed_origin = urlparse.urlparse(origin)
+		parsed_origin = urllib.parse.urlparse(origin)
 		return parsed_origin.netloc.endswith(websocket_allow_from)
 
 	def open(self, *args, **kwargs):

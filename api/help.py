@@ -22,7 +22,7 @@ sections = { "Core JSON": {},
 			"Other": {} }
 
 def sectionize_requests():
-	for url, handler in help_classes.items():
+	for url, handler in list(help_classes.items()):
 		if handler.help_hidden:
 			pass
 		elif handler.local_only:
@@ -167,7 +167,7 @@ class HelpRequest(tornado.web.RequestHandler):
 		if getattr(klass, "pagination", False) and not "per_page" in klass.fields:
 			self.write("<tr><td>per_page</td><td>integer</td><td>Optional, default 100</td></tr>")
 			self.write("<tr><td>page_start</td><td>integer</td><td>Optional, default 0</td></tr>")
-		for field, field_attribs in klass.fields.iteritems():
+		for field, field_attribs in klass.fields.items():
 			type_cast, required = field_attribs
 			self.write("<tr><td>%s</td><td>%s</td>" % (field, type_cast.__name__))
 			if required:

@@ -20,9 +20,9 @@ class LocaleIndex(api.web.HTMLRequest):
 		self.write("<p>Translating a new language?  Start with the <a href='https://github.com/rmcauley/rainwave/blob/master/lang/en_MASTER.json'>Github Translation File Template</a>.</p>")
 
 		self.write("<hr><p>The following languages exist, but may have missing lines: <ul>")
-		for k, v in locale.translations.iteritems():
+		for k, v in locale.translations.items():
 			if k != "en_CA":
-				self.write("<li><a href='/locale/%s'>%s</a> - %s missing lines</a>" % (k, k, len(v.missing.keys())))
+				self.write("<li><a href='/locale/%s'>%s</a> - %s missing lines</a>" % (k, k, len(list(v.missing.keys()))))
 		self.write("</li>")
 		self.write(self.render_string("basic_footer.html"))
 

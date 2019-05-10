@@ -2,7 +2,7 @@ from time import time as timestamp
 import re
 import random
 import string
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 import unicodedata
 
 from libs import log
@@ -125,7 +125,7 @@ class User(object):
 
 	def _auth_anon_user(self, api_key, bypass = False):
 		if not bypass:
-			cache_key = unicodedata.normalize('NFKD', u"api_key_listen_key_%s" % api_key).encode('ascii', 'ignore')
+			cache_key = unicodedata.normalize('NFKD', "api_key_listen_key_%s" % api_key).encode('ascii', 'ignore')
 			listen_key = cache.get(cache_key)
 			if not listen_key:
 				listen_key = db.c.fetch_var("SELECT api_key_listen_key FROM r4_api_keys WHERE api_key = %s AND user_id = 1", (self.api_key,))
@@ -415,7 +415,7 @@ class User(object):
 			if self.data.get('api_key') and self.data['listen_key']:
 				return
 			api_key = self.generate_api_key(int(timestamp()) + 172800, self.data.get('api_key'))
-			cache_key = unicodedata.normalize('NFKD', u"api_key_listen_key_%s" % api_key).encode('ascii', 'ignore')
+			cache_key = unicodedata.normalize('NFKD', "api_key_listen_key_%s" % api_key).encode('ascii', 'ignore')
 			cache.set(cache_key, self.data['listen_key'])
 		elif self.id > 1:
 			if 'api_key' in self.data and self.data['api_key']:
@@ -448,7 +448,7 @@ class User(object):
 			return
 
 		try:
-			prefs_json_string = urllib2.unquote(prefs_json_string)
+			prefs_json_string = urllib.parse.unquote(prefs_json_string)
 			if self.id > 1:
 				if not db.c.fetch_var("SELECT COUNT(*) FROM r4_pref_storage WHERE user_id = %s", (self.id,)):
 					db.c.update("INSERT INTO r4_pref_storage (user_id, prefs) VALUES (%s, %s::jsonb)", (self.id, prefs_json_string))

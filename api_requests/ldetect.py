@@ -46,7 +46,7 @@ class IcecastHandler(RainwaveHandler):
 
 	def write_error(self, status_code, **kwargs):
 		self.failed = True
-		if kwargs.has_key("exc_info"):
+		if "exc_info" in kwargs:
 			exc = kwargs['exc_info'][1]
 			if isinstance(exc, APIException):
 				exc.localize(self.locale)

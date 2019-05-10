@@ -33,7 +33,7 @@ class TuneInIndex(api.web.HTMLRequest):
 		if url_param:
 			url_param_int = api.web.fieldtypes.positive_integer(url_param)
 			if not url_param_int:
-				for k, v in config.station_id_friendly.iteritems():
+				for k, v in config.station_id_friendly.items():
 					if v.lower() == url_param.lower():
 						self.sid = k
 						break

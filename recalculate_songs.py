@@ -18,7 +18,7 @@ if __name__ == "__main__":
 	for song_id in songs:
 		txt = "Song %s / %s" % (i, len(songs))
 		txt += " " * (80 - len(txt))
-		print "\r" + txt,
+		print("\r" + txt, end=' ')
 		i += 1
 
 		s = Song.load_from_id(song_id)

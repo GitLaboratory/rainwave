@@ -18,7 +18,7 @@ if __name__ == "__main__":
 	for group_id in groups:
 		txt = "Group %s / %s" % (i, len(groups))
 		txt += " " * (80 - len(txt))
-		print "\r" + txt,
+		print("\r" + txt, end=' ')
 		i += 1
 
 		g = SongGroup.load_from_id(group_id)

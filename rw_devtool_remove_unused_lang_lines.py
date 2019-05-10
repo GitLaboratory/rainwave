@@ -7,7 +7,7 @@ import api.locale
 api.locale.load_translations()
 
 to_pop = []
-for k, v in api.locale.master.iteritems():
+for k, v in api.locale.master.items():
 	found = False
 	for root, subdirs, files in os.walk(os.path.join("static", "js4")):
 		for filename in files:

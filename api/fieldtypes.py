@@ -11,14 +11,14 @@ string_error = "must be a string."
 def string(in_string, request = None):
 	if not in_string:
 		return None
-	if not isinstance(in_string, (str, unicode)):
+	if not isinstance(in_string, str):
 		return None
-	if isinstance(in_string, unicode):
+	if isinstance(in_string, str):
 		return in_string
 	try:
-		return unicode(in_string, 'utf-8').strip()
+		return str(in_string, 'utf-8').strip()
 	except UnicodeDecodeError:
-		return unicode(in_string).strip()
+		return str(in_string).strip()
 	return None
 
 # All _error variables start with no capital letter and end with a period.
@@ -28,7 +28,7 @@ def numeric(s, request = None):
 		return s
 	if not s:
 		return None
-	if not isinstance(s, (str, unicode)):
+	if not isinstance(s, str):
 		return None
 	if not re.match('^-?\d+(.\d+)?$', s):
 		return None
@@ -40,7 +40,7 @@ def integer(s, request = None):
 		return s
 	if not s:
 		return None
-	if not isinstance(s, (str, unicode)):
+	if not isinstance(s, str):
 		return None
 	if not re.match('^-?\d+$', s):
 		return None
@@ -132,7 +132,7 @@ def long_num(s, request = None):
 	l = numeric(s)
 	if not l:
 		return None
-	return long(l)
+	return int(l)
 
 rating_error = "must >= 1.0 and <= 5.0 in increments of	0.5."
 def rating(s, request = None):
@@ -172,7 +172,7 @@ valid_relay_error = "must be a known and valid relay's IP address."
 def valid_relay(s, request = None):
 	if not s:
 		return None
-	for name, value in config.get("relays").iteritems():
+	for name, value in config.get("relays").items():
 		if value['ip_address'] == s or (value.get('ip_address6') and value.get('ip_address6') == s):
 			return name
 	return None
@@ -194,7 +194,7 @@ integer_list_error = "must be a comma-separated list of integers."
 def integer_list(s, request = None):
 	if isinstance(s, list):
 		for i in s:
-			if not isinstance(i, (int, long)):
+			if not isinstance(i, int):
 				return None
 		return s
 
@@ -234,7 +234,7 @@ def icecast_mount(s, request = None):
 	uid = 1
 	listen_key = None
 	if "user" in rd and rd["user"]:
-		uid = long(rd["user"])
+		uid = int(rd["user"])
 		listen_key = rd["key"]
 	return (mount, uid, listen_key)
 
