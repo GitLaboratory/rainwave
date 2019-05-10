@@ -22,7 +22,6 @@ if __name__ == "__main__":
     cache.connect()
 
     dow_map = [(4, 5), (2, 1), (3, 4), (5, 2), (1, 3), (2, 4), (1, 3)]
-    # dow_map = [ (1, 1), (1, 1), (1, 1), (1, 1), (1, 1), (1, 1), (1, 1) ]
     timezones = [(timezone("Europe/London"), 13, 0), (timezone("US/Eastern"), 13, 1)]
 
     for tz in timezones:

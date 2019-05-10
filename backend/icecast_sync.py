@@ -56,14 +56,6 @@ class IcecastSyncCallback(object):
             ),
         )
 
-        # for asynchronous processing
-        # for relay, data in in_process.iteritems():
-        # 	print relay, data
-        # 	if not data:
-        # 		log.debug("icecast_sync", "%s %s not done yet." % (relay.relay_name, relay.sid))
-        # 		return None
-        # self.callback()
-
 
 def _cache_relay_status():
     global in_process
@@ -109,8 +101,6 @@ def _count():
             )
 
         _cache_relay_status()
-
-        # db.c.update("DELETE FROM r4_listener_counts WHERE lc_time <= %s", (current_time - config.get("trim_history_length"),))
 
         in_process = {}
     except Exception as e:

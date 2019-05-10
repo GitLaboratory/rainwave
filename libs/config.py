@@ -102,7 +102,6 @@ def load(filename=None, testmode=False):
                 "protocol": "http://",
                 "hostname": get_station(sid, "round_robin_relay_host"),
                 "port": get_station(sid, "round_robin_relay_port"),
-                # "url": "http://%s:%s" % (get_station(sid, "round_robin_relay_host"), get_station(sid, "round_robin_relay_port"))
             }
         )
         relay_hostnames.append(
@@ -116,7 +115,6 @@ def load(filename=None, testmode=False):
                         "protocol": relay["protocol"],
                         "hostname": relay["hostname"],
                         "port": relay["port"],
-                        #'url': "http://%s:%s" % (relay['hostname'], relay['port'])
                     }
                 )
                 relay_hostname = relay["protocol"] + relay["hostname"]

@@ -1,5 +1,3 @@
-# coding=utf-8
-
 import os
 import tornado.web
 
@@ -96,7 +94,6 @@ class MainIndex(api.web.HTMLRequest):
                 http_code=500,
             )
 
-        # self.json_payload = {}
         self.jsfiles = None
 
         if not self.user:
@@ -124,17 +121,11 @@ class MainIndex(api.web.HTMLRequest):
                             )
                         )
 
-    # def append(self, key, value):
-    # 	self.json_payload[key] = value
-
     def get(self, station=None):
         self.mobile = (
             self.request.headers.get("User-Agent").lower().find("mobile") != -1
             or self.request.headers.get("User-Agent").lower().find("android") != -1
         )
-        # if not self.beta:
-        # 	info.attach_info_to_request(self, extra_list=self.get_cookie("r4_active_list"))
-        # self.append("api_info", { "time": int(timestamp()) })
         page_title = None
         if self.sid == config.get("default_station"):
             page_title = self.locale.translate("page_title_on_google")
@@ -151,12 +142,6 @@ class MainIndex(api.web.HTMLRequest):
             ),
             revision_number=config.build_number,
             jsfiles=self.jsfiles,
-            # api_url=config.get("api_external_url_prefix"),
-            # cookie_domain=config.get("cookie_domain"),
-            # locales=api.locale.locale_names_json,
-            # relays=config.public_relays_json[self.sid],
-            # stream_filename=config.get_station(self.sid, "stream_filename"),
-            # station_list=config.station_list_json,
             mobile=self.mobile,
             station_name=page_title,
             dj=self.user.is_dj(),

@@ -595,33 +595,6 @@ class Song(object):
         self.data["elec_blocked_by"] = blocked_by
         self.data["elec_blocked"] = True
 
-    # def update_rating(self, skip_album_update = False):
-    # 	"""
-    # 	Calculate an updated rating from the database.
-    # 	"""
-    # 	dislikes = db.c.fetch_var("SELECT COUNT(*) FROM r4_song_ratings JOIN phpbb_users USING (user_id) WHERE radio_inactive = FALSE AND song_id = %s AND song_rating_user < 3 GROUP BY song_id", (self.id,))
-    # 	if not dislikes:
-    # 		dislikes = 0
-    # 	neutrals = db.c.fetch_var("SELECT COUNT(*) FROM r4_song_ratings JOIN phpbb_users USING (user_id) WHERE radio_inactive = FALSE AND song_id = %s AND song_rating_user >= 3 AND song_rating_user < 3.5 GROUP BY song_id", (self.id,))
-    # 	if not neutrals:
-    # 		neutrals = 0
-    # 	neutralplus = db.c.fetch_var("SELECT COUNT(*) FROM r4_song_ratings JOIN phpbb_users USING (user_id) WHERE radio_inactive = FALSE AND song_id = %s AND song_rating_user >= 3.5 AND song_rating_user < 4 GROUP BY song_id", (self.id,))
-    # 	if not neutralplus:
-    # 		neutralplus = 0
-    # 	likes = db.c.fetch_var("SELECT COUNT(*) FROM r4_song_ratings JOIN phpbb_users USING (user_id) WHERE radio_inactive = FALSE AND song_id = %s AND song_rating_user >= 4 GROUP BY song_id", (self.id,))
-    # 	if not likes:
-    # 		likes = 0
-    # 	rating_count = dislikes + neutrals + neutralplus + likes
-    # 	log.debug("song_rating", "%s ratings for %s" % (rating_count, self.filename))
-    # 	if rating_count > config.get("rating_threshold_for_calc"):
-    # 		self.data['rating'] = ((((likes + (neutrals * 0.5) + (neutralplus * 0.75)) / (likes + dislikes + neutrals + neutralplus) * 4.0)) + 1)
-    # 		log.debug("song_rating", "rating update: %s for %s" % (self.data['rating'], self.filename))
-    # 		db.c.update("UPDATE r4_songs SET song_rating = %s, song_rating_count = %s WHERE song_id = %s", (self.data['rating'], rating_count, self.id))
-
-    # 	if not skip_album_update:
-    # 		for album in self.albums:
-    # 			album.update_rating()
-
     def update_rating(self, skip_album_update=False):
         ratings = db.c.fetch_all(
             "SELECT song_rating_user AS rating, COUNT(user_id) AS count FROM r4_song_ratings JOIN phpbb_users USING (user_id) WHERE song_id = %s AND radio_inactive = FALSE AND song_rating_user IS NOT NULL GROUP BY song_rating_user",
@@ -831,29 +804,6 @@ class Song(object):
                 d[v] = self.data[v]
 
         return d
-
-    # def to_dict_full(self, user = None):
-    # 	self.data['id'] = self.id
-    # 	self.data['artists'] = []
-    # 	self.data['albums'] = []
-    # 	self.data['groups'] = []
-    # 	if self.albums:
-    # 		for metadata in self.albums:
-    # 			self.data['albums'].append(metadata.to_dict(user))
-    # 	if self.artists:
-    # 		for metadata in self.artists:
-    # 			self.data['artists'].append(metadata.to_dict(user))
-    # 	if self.groups:
-    # 		for metadata in self.groups:
-    # 			self.data['groups'].append(metadata.to_dict(user))
-    # 	self.data['rating_user'] = None
-    # 	self.data['fave'] = None
-    # 	self.data['rating_allowed'] = False
-    # 	if user:
-    # 		self.data.update(rating.get_song_rating(self.id, user.id))
-    # 		if user.data['rate_anything']:
-    # 			self.data['rating_allowed'] = True
-    # 	return self.data
 
     def get_all_ratings(self):
         table = db.c.fetch_all(

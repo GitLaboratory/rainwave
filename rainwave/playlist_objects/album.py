@@ -529,6 +529,7 @@ class Album(AssociatedMetadata):
             )
 
     def _start_election_block_db(self, sid, num_elections):
+        # Can only be run on Postgres
         if db.c.allows_join_on_update:
             # refer to song.set_election_block for base SQL
             db.c.update(
@@ -538,13 +539,6 @@ class Album(AssociatedMetadata):
                 "WHERE r4_song_sid.song_id = r4_songs.song_id AND album_id = %s AND sid = %s AND song_elec_blocked_num <= %s",
                 ("album", num_elections, self.id, sid, num_elections),
             )
-        # Disabled for SQLite to avoid circular module importing
-        # else:
-        # 	table = db.c.fetch_all("SELECT song_id FROM r4_song_sid JOIN r4_songs USING (song_id) WHERE album_id = %s AND sid = %s", (self.id, sid))
-        # 	for row in table:
-        # 		song = Song()
-        # 		song.id = row['song_id']
-        # 		song.set_election_block(sid, 'album', num_elections)
 
     def load_extra_detail(self, sid, get_all_groups=False):
         global num_albums
@@ -589,14 +583,6 @@ class Album(AssociatedMetadata):
         )
 
         self.data["rating_histogram"] = {}
-        # histo = db.c.fetch_all("SELECT "
-        # 					   "ROUND(((album_rating_user * 10) - (CAST(album_rating_user * 10 AS SMALLINT) %% 5))) / 10 AS rating_rnd, "
-        # 					   "COUNT(album_rating_user) AS rating_count "
-        # 					   "FROM r4_album_ratings JOIN phpbb_users USING (user_id) "
-        # 					   "WHERE album_id = %s AND sid = %s "
-        # 					   "GROUP BY rating_rnd "
-        # 					   "ORDER BY rating_rnd",
-        # 					   (self.id, sid))
         histo = db.c.fetch_all(
             "SELECT song_rating_user, COUNT(song_rating) AS rating_count "
             "FROM r4_song_ratings "

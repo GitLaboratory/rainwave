@@ -73,18 +73,11 @@ class AddListener(IcecastHandler):
         "agent": (fieldtypes.media_player, True),
     }
 
-    # local testing only
-    # allow_get = True
-    # def get(self, sid):
-    # 	self.post(sid)
-
     def post(self, sid):  # pylint: disable=W0221
         (self.mount, self.user_id, self.listen_key) = self.get_argument("mount")
         self.agent = self.get_argument("agent")
         self.listener_ip = self.get_argument("ip")
 
-        # if self.mount in config.station_mounts:
-        # 	self.sid = config.station_mounts[self.mount]
         if sid:
             try:
                 self.sid = int(sid)

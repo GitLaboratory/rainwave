@@ -113,11 +113,6 @@ class AdvanceScheduleRequest(tornado.web.RequestHandler):
         return string
 
 
-# class RefreshScheduleRequest(tornado.web.RequestHandler):
-# 	def get(self, sid):
-# 		schedule.refresh_schedule(int(sid))
-
-
 class BackendServer(object):
     def _listen(self, sid):
         pid = os.getpid()
@@ -148,7 +143,6 @@ class BackendServer(object):
         if config.test_mode:
             playlist.remove_all_locks(sid)
 
-        # (r"/refresh/([0-9]+)", RefreshScheduleRequest)
         app = tornado.web.Application(
             [(r"/advance/([0-9]+)", AdvanceScheduleRequest)],
             debug=(config.test_mode or config.get("developer_mode")),

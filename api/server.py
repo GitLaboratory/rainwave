@@ -4,11 +4,7 @@ import http.client
 import urllib.request, urllib.parse, urllib.error
 import time
 import traceback
-
-try:
-    import ujson as json
-except ImportError:
-    import json
+import json
 
 import tornado.httpserver
 import tornado.ioloop
@@ -61,7 +57,6 @@ request_classes = [
         {"path": os.path.join(os.path.dirname(__file__), "..", "static")},
     ),
 ]
-testable_requests = []
 api_endpoints = {}
 app = None
 
@@ -92,35 +87,6 @@ class handle_api_html_url(handle_url):
         super(handle_api_html_url, self).__init__("/pages/" + url)
 
 
-def test_get(klass):
-    testable_requests.append({"method": "GET", "class": klass})
-
-
-def test_post(klass):
-    testable_requests.append({"method": "POST", "class": klass})
-
-
-class TestShutdownRequest(api.web.APIHandler):
-    auth_required = False
-    allow_get = True
-
-    def post(self):
-        self.write("Shutting down server.")
-
-    def on_finish(self):
-        tornado.ioloop.IOLoop.instance().stop()  # add_timeout(time.gmtime() + 2, tornado.ioloop.IOLoop.instance().stop)
-        super(TestShutdownRequest, self).on_finish()
-
-
-class APITestFailed(Exception):
-    def __init__(self, value):
-        super(APITestFailed, self).__init__()
-        self.value = value
-
-    def __str__(self):
-        return repr(self.value)
-
-
 class APIServer(object):
     def __init__(self):
         self.ioloop = None
@@ -145,8 +111,6 @@ class APIServer(object):
 
         # Log according to configured directory and port # we're operating on
         log_file = "%s/rw_api_%s.log" % (config.get_directory("log_dir"), port_no)
-        if config.test_mode and os.path.exists(log_file):
-            os.remove(log_file)
         log.init(log_file, config.get("log_level"))
         log.debug("start", "Server booting, port %s." % port_no)
         db.connect()
@@ -178,9 +142,6 @@ class APIServer(object):
         if not config.get("developer_mode"):
             i = 0
             while i < len(request_classes):
-                if request_classes[i][0].find("/test/") != -1:
-                    request_classes.pop(i)
-                    i = i - 1
                 i = i + 1
 
         # Make sure all other errors get handled in an API-friendly way
@@ -195,7 +156,7 @@ class APIServer(object):
         global app
         app = tornado.web.Application(
             request_classes,
-            debug=(config.test_mode or config.get("developer_mode")),
+            debug=config.get("developer_mode"),
             template_path=os.path.join(os.path.dirname(__file__), "../templates"),
             static_path=os.path.join(os.path.dirname(__file__), "../static"),
             autoescape=None,
@@ -245,101 +206,3 @@ class APIServer(object):
             task_id = tornado.process.task_id()
             if task_id != None:
                 self._listen(task_id)
-
-    def test(self):
-        # Fake a decorator call on the handle_url decorator
-        handle_obj = handle_url("shutdown")
-        handle_obj.__call__(TestShutdownRequest)
-
-        tornado.process.fork_processes(2, 0)
-
-        task_id = tornado.process.task_id()
-        if task_id == 0:
-            self._listen(task_id)
-            # time.sleep(2)
-            return True
-        elif task_id == 1:
-            time.sleep(1)
-            return self._run_tests()
-        elif task_id == None:
-            print()
-            print("OK.")
-            return True
-        return False
-
-    def _run_tests(self):
-        passed = True
-        headers = {
-            "Content-type": "application/x-www-form-urlencoded",
-            "Accept": "text/plain text/html text/javascript application/json application/javascript",
-        }
-        params = {}
-        for request_pair in testable_requests:
-            request = request_pair["class"]
-            sys.stdout.write(".")
-            try:
-                # print "*** ", request.url
-                # Setup and get the data from the HTTP server
-                params = {}
-                if request.auth_required:
-                    params["user_id"] = 2
-                    params["key"] = "TESTKEY"
-                    if (
-                        request.login_required
-                        or request.admin_required
-                        or request.dj_required
-                    ):
-                        # admin login, user ID 2 currently is though.
-                        pass
-                    else:
-                        # need an anon user/key added to params here
-                        pass
-                params["sid"] = 1
-                params = urllib.parse.urlencode(params)
-                conn = http.client.HTTPConnection(
-                    "localhost", config.get("api_base_port")
-                )
-
-                conn.request(
-                    request_pair["method"], "/api/%s" % request.url, params, headers
-                )
-                response = conn.getresponse()
-                response_pass = True
-                if response.status == 200:
-                    web_data = json.load(response)
-                    del web_data["api_info"]
-
-                    ref_file = open("api_tests/%s.json" % request.url)
-                    ref_data = json.load(ref_file)
-                    ref_file.close()
-
-                    if not dict_compare.print_differences(ref_data, web_data):
-                        response_pass = False
-                        print("JSON from server:")
-                        print(json.dumps(web_data, ensure_ascii=False, indent=4))
-                        print()
-                else:
-                    response_pass = False
-                if not response_pass:
-                    passed = False
-                    print()
-                    print(
-                        "*** ERROR:", request.url, ": Response status", response.status
-                    )
-            except:
-                print()
-                traceback.print_exc(file=sys.stdout)
-                print("*** ERROR:", request.url, ": ", sys.exc_info()[0])
-                passed = False
-                print()
-
-        conn = http.client.HTTPConnection("localhost", config.get("api_base_port"))
-        conn.request("GET", "/api/shutdown", params, headers)
-        conn.getresponse()
-        time.sleep(3)
-
-        print()
-        print("----------------------------------------------------------------------")
-        print("Ran %s tests." % len(testable_requests))
-
-        return passed

@@ -56,9 +56,6 @@ class AlbumHandler(APIHandler):
                 (self.user.id, self.sid, self.user.id, self.sid, s),
             )
 
-        # use bigger query below
-        # songs = db.c.fetch_all("SELECT DISTINCT song_id, song_title, album_name, song_origin_sid, song_cool, song_cool_end, song_url, song_length,  FROM r4_song_sid JOIN r4_songs USING (song_id) JOIN r4_albums USING (album_id) WHERE sid = %s AND song_title_searchable LIKE %s", (self.sid, s))
-
         # base SQL here copy pasted from /rainwave/playlist_objects/album.py
         if self.user.is_anonymous():
             songs = db.c.fetch_all(

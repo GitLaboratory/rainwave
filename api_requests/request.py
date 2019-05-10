@@ -165,7 +165,6 @@ class ListRequestLine(APIHandler):
 
     def post(self):
         self.append(self.return_name, cache.get_station(self.sid, "request_line"))
-        # self.append("request_line_db", db.c.fetch_all("SELECT username, r4_request_line.* FROM r4_request_line JOIN phpbb_users USING (user_id) WHERE sid = %s ORDER BY line_wait_start", (self.sid,)))
 
 
 @handle_api_html_url("request_line")

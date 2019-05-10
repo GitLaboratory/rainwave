@@ -71,7 +71,6 @@ class SubmitVote(APIHandler):
         # Subtract a previous vote from the song's total if there was one
         already_voted = False
         if self.user.is_anonymous():
-            # log.debug("vote", "Anon already voted: %s" % (self.user.data['voted_entry'],))
             if (
                 self.user.data["voted_entry"]
                 and self.user.data["voted_entry"] == entry_id
@@ -85,7 +84,6 @@ class SubmitVote(APIHandler):
                 "SELECT entry_id, vote_id, song_id FROM r4_vote_history WHERE user_id = %s AND elec_id = %s",
                 (self.user.id, event.id),
             )
-            # log.debug("vote", "Already voted: %s" % repr(already_voted))
             if previous_vote and previous_vote["entry_id"] == entry_id:
                 # immediately return and a success will be registered
                 return True

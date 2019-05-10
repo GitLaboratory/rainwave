@@ -147,6 +147,7 @@ class SongGroup(AssociatedMetadata):
                 )
 
     def _start_election_block_db(self, sid, num_elections):
+        # Can only run Postgres
         if db.c.allows_join_on_update:
             # refer to song.set_election_block for base SQL
             db.c.update(
@@ -157,13 +158,6 @@ class SongGroup(AssociatedMetadata):
                 "r4_song_group.group_id = %s AND r4_song_sid.sid = %s AND song_elec_blocked_num < %s",
                 ("group", num_elections, self.id, sid, num_elections),
             )
-        # Disabled for SQLite to prevent circular module referencing
-        # else:
-        # 	table = db.c.fetch_all("SELECT r4_song_group.song_id FROM r4_song_group JOIN r4_song_sid ON (r4_song_group.song_id = r4_song_sid.song_id AND r4_song_sid.sid = %s) WHERE group_id = %s", (self.id, sid))
-        # 	for row in table:
-        # 		song = Song()
-        # 		song.id = row['song_id']
-        # 		song.set_election_block(sid, 'group', num_elections)
 
     def set_elec_block(self, num_elections):
         db.c.update(

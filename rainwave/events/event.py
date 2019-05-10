@@ -18,7 +18,8 @@ def get_admin_creatable_producers():
         if (
             (key != "ShortestElectionProducer")
             and
-            # 			(key != "ElectionProducer") and
+            # commented until the one day in the far future when DJ functionality is complete
+            # (key != "ElectionProducer") and
             (key != "OneUpProducer")
         ):
             types.append(key)
