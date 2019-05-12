@@ -139,10 +139,6 @@ def _scan_directory(directory, sids):
     # Normalize and add a trailing separator to the directory name
     directory = os.path.join(os.path.normpath(directory), "")
 
-    # Windows workaround eww, damnable directory names
-    if os.name == "nt":
-        directory = directory.replace("\\", "\\\\")
-
     songs = db.c.fetch_list(
         "SELECT song_id FROM r4_songs WHERE song_filename LIKE %s || '%%' AND song_verified = TRUE",
         (directory,),
@@ -299,10 +295,7 @@ def _process_album_art(filename, sids):
     if not config.get("album_art_enabled"):
         return True
     try:
-        # There's an ugly bug here where psycopg isn't correctly escaping the path's \ on Windows
-        # So we need to repr() in order to get the proper number of \ and then chop the leading and trailing single-quotes
-        # Nasty bug.  This workaround needs to be more thoroughly tested, admittedly, but appears to work fine on Linux as well.
-        directory = repr(os.path.dirname(filename) + os.sep).strip("u'\"")
+        directory = os.path.dirname(filename) + os.sep
         album_ids = db.c.fetch_list(
             "SELECT DISTINCT album_id FROM r4_songs WHERE song_filename LIKE %s || '%%'",
             (directory,),

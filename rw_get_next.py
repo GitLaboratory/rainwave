@@ -23,13 +23,7 @@ cache.connect()
 
 params = urllib.parse.urlencode({"sid": args.sid})
 try:
-    dest_port = config.get("backend_port")
-    # Linux, multiprocessing is on
-    if hasattr(os, "fork"):
-        dest_port += int(args.sid)
-    # Windows, no multiprocessing
-    else:
-        dest_port += int(list(config.station_ids)[0])
+    dest_port = config.get("backend_port") + int(list(config.station_ids)[0])
     timeout = 5 if cache.get_station(args.sid, "backend_ok") else 120
     conn = http.client.HTTPConnection(
         args.dest, config.get("backend_port") + int(args.sid), timeout=timeout

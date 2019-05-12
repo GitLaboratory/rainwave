@@ -18,7 +18,7 @@ The software stack and data flow for broadcasting:
 
 Rainwave only supports MP3 files.
 
-## Prerequisites
+## Before Installing
 
 Authentication for Rainwave users is dependant on phpBB.
 
@@ -37,42 +37,43 @@ If using LiquidSoap, LiquidSoap 1.1 or above is required. If you want
 to use the built-in web DJ functionality of Rainwave, LiquidSoap 1.3
 or above is required.
 
-### Prerequisites on Debian/Ubuntu
+### Installing
+
+Clone Rainwave:
 
 ```
 git clone https://github.com/rmcauley/rainwave.git
-sudo apt-get install memcached postgresql-contrib python-pip python-psycopg2 python-mutagen python-nose python-imaging python-psutil python-unidecode python-pylibmc python-tornado python-meliae slimit python-fontforge python-dev libpython-dev mp3gain
-sudo pip install -r rainwave/requirements.txt
-sudo pip install ujson
+```
+
+If you are on Debian Buster, you can use the following to get setup quickly:
+
+```
+sudo apt-get install memcached postgresql-contrib python-fontforge python-rgain pypy3 pypy3-dev virtualenv libpq-dev zlib1g-dev libjpeg-dev zlibc liblz-dev libzstd-dev
+virtualenv -p /usr/bin/pypy3 ~/.rwenv
+source ~/.rwenv/bin/activate
+```
+
+Otherwise you will need:
+
+-   memcached
+-   PostgreSQL 11
+-   Python 3.5 / PyPy 7.0 (production Rainwave runs PyPy 7.0)
+-   `python-rgain` package with its `replaygain` executable
+-   A virtualenv for Rainwave to run in and install its own packages
+-   The pip packages in `requirements.txt` to be installed
+
+Then copy the reference configuration file to your own:
+
+```
 cp rainwave/etc/rainwave_reference.conf rainwave/etc/$USER.conf
 ```
-
-### Prerequisites on Windows
-
--   [Install Postgres 11 or above](http://www.postgresql.org/download/windows/) with extras/"contrib" option during install
--   [Install Memcache for Windows](https://commaster.net/content/installing-memcached-windows), any version, and start it
--   [Download and install Python 2.7 64-bit for Windows](https://www.python.org/download/), during install, select to add Python to your PATH
--   [Download and install psycopg2 for 64-bit Python 2.7](http://www.stickpeople.com/projects/python/win-psycopg/)
--   [Download and install psutil for 64-bit Python 2.7](https://pypi.python.org/pypi?:action=display&name=psutil#downloads)
--   [Install setuptools](https://pypi.python.org/pypi/setuptools#installation-instructions)
--   Make sure the Python Scripts directory is also on your PATH (i.e. easy_install)
--   Clone/download the Rainwave repository to a folder
--   Open a command shell to the folder and execute:
-
-```
-easy_install pip
-pip install -r requirements.txt
-```
-
--   Copy `etc/rainwave_reference.conf` to `etc/[your username].conf`
 
 ## Postgres Setup For Testing/Development
 
 If you are using a phpBB install for user authentication, **skip this step** and use
 your existing phpBB database and database credentials.
 
--   On Windows, use PgAdmin to connect to your database, and open an SQL input window.
--   On most Linux installs, open an SQL prompt with `sudo -u postgres psql`.
+On most Linux installs, open an SQL prompt with `sudo -u postgres psql`.
 
 Execute the following SQL, replacing the password with your own:
 
@@ -187,7 +188,7 @@ Open the beta URL at `/beta/?sid=1` to see your Rainwave.
 If you are not running against an installed phpBB and want
 to emulate being logged in, open `/api4/test/login_tuned_in/1`.
 
-## Deploying to Production (Linux Only)
+## Deploying to Production
 
 ### Installing a Production Rainwave
 
@@ -250,8 +251,8 @@ Rainwave! Open it up and start poking around with developer tools!
 
 To edit the site:
 
--   Use Visual Studio Code and the provided `rainwave.code-workspace`
--   Install the Python and Prettier extensions for VSCode.
+-   Use Visual Studio Code open
+-   Install the Python and Prettier extensions for VSCode, and follow instructions to install any extra modules.
 
 File locations:
 

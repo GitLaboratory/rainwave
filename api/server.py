@@ -189,7 +189,7 @@ class APIServer(object):
         buildtools.copy_woff()
 
         # Setup variables for the long poll module
-        # Bypass Tornado's forking processes for Windows machines if num_processes is set to 1
+        # Bypass Tornado's forking processes if num_processes is set to 1
         if config.get("api_num_processes") == 1 or config.get("web_developer_mode"):
             self._listen(0)
         else:
