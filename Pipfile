@@ -23,6 +23,7 @@ Unidecode = "==1.1.1"
 pylint-django = "*"
 ipython = "*"
 django-extensions = "*"
+django = "==3.0.2"
 
 [dev-packages]
 
