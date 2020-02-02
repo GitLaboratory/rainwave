@@ -738,7 +738,8 @@ def _create_test_tables():
 			user_avatar_type		INT			DEFAULT 0, \
 			user_colour             TEXT        DEFAULT 'FFFFFF', \
 			user_rank               INT 	    DEFAULT 0, \
-			user_regdate            INT         DEFAULT 0 \
+			user_regdate            INT         DEFAULT 0, \
+                        user_email                   TEXT        DEFAULT 'test@test.com' \
 		)"
     )
 

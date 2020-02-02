@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 
 from utils.generate_key import generate_key
@@ -79,11 +80,21 @@ class User(AbstractUser):
         editable=False, blank=True, null=True, db_column="user_regdate"
     )
 
-    def set_password(self, *args, **kwargs):
-        raise NotImplementedError
+    first_name = models.CharField(max_length=200)
+    last_name = models.CharField(max_length=200)
 
-    def check_password(self, *args, **kwargs):
-        raise NotImplementedError
+    def set_password(self, raw_password, *args, **kwargs):
+        if settings.DEBUG:
+            self.password = raw_password
+            self._password = raw_password
+        else:
+            raise NotImplementedError
+
+    def check_password(self, raw_password, *args, **kwargs):
+        if settings.DEBUG:
+            return raw_password == self.password
+        else:
+            raise NotImplementedError
 
     @property
     def last_login(self):
