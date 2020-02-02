@@ -1,10 +1,11 @@
 from django.db import models
 
 from users.models import User
-from playlist.models.album import Album
+from playlist.models.album import Album, UserAlbumOnStation, AlbumOnStationQuerySet, UserAlbumRating, UserAlbumFave, AlbumOnStation
 from playlist.models.artist import Artist
 from playlist.models.group import Group
 
+from playlist.utils.sql_model_mapper import SQLModelMapper
 from utils.time import now
 
 
@@ -86,7 +87,52 @@ class Song(models.Model):
         db_table = "r4_songs"
 
 
+class SongOnStationQuerySet(models.QuerySet):
+    def _get_rainwave_query(self, user, sort_sql, extra_selects="", extra_joins=""):
+        query = str(self.query).replace(
+            "SELECT ",
+            f'SELECT r4_song_sid.song_id AS "__core_song_id", r4_song_sid.sid AS "__core_sid", {extra_selects}',
+            1,
+        )
+        return (
+            f"WITH original_query AS ({query}) "
+            "SELECT "
+            "   * "
+            "FROM "
+            "   original_query " + extra_joins + "   LEFT JOIN r4_song_ratings ON ("
+            '       original_query."__core_song_id" = r4_song_ratings.song_id '
+            "       AND r4_song_ratings.user_id = %(user_id)s "
+            "   ) "
+            f"ORDER BY {sort_sql} ",
+            {"user_id": user.id if isinstance(user, User) else user},
+        )
+
+    def user_song_iterator(self, user=None, sort_sql="song_title"):
+        return UserSongOnStation.iterate(*self._get_rainwave_query(user, sort_sql))
+
+    def user_song_album_iterator(self, user=None, sort_sql="song_title"):
+        return UserSongAlbumOnStation.iterate(
+            *self.select_related("song__album")._get_rainwave_query(
+                user,
+                sort_sql,
+                extra_selects=f"{AlbumOnStationQuerySet.rainwave_join_query_select}, ",
+                extra_joins=AlbumOnStationQuerySet.rainwave_join_query,
+            )
+        )
+
+
+class UnfilteredSongOnStationManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().select_related("song")
+
+
+class SongOnStationManager(UnfilteredSongOnStationManager):
+    def get_queryset(self):
+        return super().get_queryset().filter(exists=True, song__verified=True)
+
+
 class SongOnStation(models.Model):
+    id = models.IntegerField(db_column="song_sid_id", primary_key=True)
     song = models.ForeignKey(Song, models.CASCADE)
 
     station_id = models.SmallIntegerField(db_column="sid", db_index=True)
@@ -133,13 +179,18 @@ class SongOnStation(models.Model):
         default=0, blank=True, null=True, db_column="song_request_only_end"
     )
 
+    objects = SongOnStationManager.from_queryset(SongOnStationQuerySet)()
+    objects_with_deleted = UnfilteredSongOnStationManager.from_queryset(
+        SongOnStationQuerySet
+    )()
+
     class Meta:
         managed = False
         db_table = "r4_song_sid"
         unique_together = (("song", "station_id"),)
 
 
-class SongRating(models.Model):
+class UserSongRating(models.Model):
     song = models.ForeignKey(Song, models.CASCADE)
     user = models.ForeignKey(User, models.CASCADE)
     rating_user = models.FloatField(blank=True, null=True, db_column="song_rating_user")
@@ -159,3 +210,27 @@ class SongRating(models.Model):
         db_table = "r4_song_ratings"
         unique_together = (("user", "song"),)
         index_together = (("user", "song"),)
+
+
+class UserSongOnStation(SQLModelMapper):
+    user_rating: UserSongRating = None
+    song_on_station: SongOnStation = None
+    song: Song = None
+
+    _models = (
+        (UserSongRating, "user_rating"),
+        (SongOnStation, "song_on_station"),
+        (Song, "song"),
+    )
+
+
+class UserSongAlbumOnStation(SQLModelMapper):
+    user_rating: UserSongRating = None
+    song_on_station: SongOnStation = None
+    song: Song = None
+    album_on_station: AlbumOnStation = None
+    album: Album = None
+    user_rating: UserAlbumRating = None
+    user_fave: UserAlbumFave = None
+
+    _models = UserSongOnStation._models + UserAlbumOnStation._models

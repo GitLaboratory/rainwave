@@ -1,10 +1,9 @@
-from typing import Dict, Set
-
-from django.db import models, connection
+from django.db import models
 
 from users.models import User
 from playlist.base_classes.base_song_group import BaseSongGroup
 
+from playlist.utils.sql_model_mapper import SQLModelMapper
 from utils.time import now
 
 
@@ -53,22 +52,31 @@ class UserAlbumRating(models.Model):
 
 
 class AlbumOnStationQuerySet(models.QuerySet):
+    rainwave_join_query = (
+        "   LEFT JOIN r4_album_ratings ON ("
+        '       original_query."__core_album_id" = r4_album_ratings.album_id '
+        '       AND original_query."__core_sid" = r4_album_ratings.sid '
+        "       AND r4_album_ratings.user_id = %(user_id)s "
+        "   ) "
+        "   LEFT JOIN r4_album_faves ON ( "
+        '       original_query."__core_album_id" = r4_album_faves.album_id '
+        "       AND r4_album_faves.user_id = %(user_id)s "
+        "   ) "
+    )
+    rainwave_join_query_select = 'r4_albums.album_id AS "__core_album_id"'
+
     def user_album_iterator(self, user=None):
+        query = str(self.query).replace(
+            "SELECT ",
+            f'SELECT {self.rainwave_join_query_select}, r4_album_sid.sid AS "__core_sid", ',
+            1,
+        )
         return UserAlbumOnStation.iterate(
-            f"WITH original_query AS ({self.query}) "
+            f"WITH original_query AS ({query}) "
             "SELECT "
             "   * "
             "FROM "
             "   original_query "
-            "   LEFT JOIN r4_album_ratings ON ("
-            "       original_query.album_id = r4_album_ratings.album_id "
-            "       AND original_query.sid = r4_album_ratings.sid "
-            "       AND r4_album_ratings.user_id = %(user_id)s "
-            "   ) "
-            "   LEFT JOIN r4_album_faves ON ( "
-            "       original_query.album_id = r4_album_faves.album_id "
-            "       AND r4_album_faves.user_id = %(user_id)s "
-            "   ) "
             "ORDER BY album_name ",
             {"user_id": user.id if isinstance(user, User) else user},
         )
@@ -157,7 +165,7 @@ class AlbumOnStation(models.Model):
         index_together = (("album", "station_id"), ("exists", "station_id"))
 
 
-class UserAlbumOnStation:
+class UserAlbumOnStation(SQLModelMapper):
     album_on_station: AlbumOnStation = None
     album: Album = None
     user_rating: UserAlbumRating = None
@@ -169,43 +177,3 @@ class UserAlbumOnStation:
         (UserAlbumRating, "user_rating"),
         (UserAlbumFave, "user_fave"),
     )
-    _column_to_vars: Dict[str, Set[str]] = {}
-
-    @classmethod
-    def solve_table_to_vars(cls):
-        if not cls._column_to_vars:
-            for (model, model_instance_attribute) in cls._models:
-                for field in model._meta.concrete_fields:
-                    field_column = field.db_column or field.name
-                    cls._column_to_vars.setdefault(field_column, set())
-                    cls._column_to_vars[field_column].add(
-                        (model_instance_attribute, field.name)
-                    )
-
-    @classmethod
-    def iterate(cls, query, params=None):
-        cls.solve_table_to_vars()
-        with connection.cursor() as cursor:
-            cursor.execute(query, params)
-            column_names = [column[0] for column in cursor.description]
-            raw_row = cursor.fetchone()
-            while raw_row:
-                instance = cls()
-                for index, value in enumerate(raw_row):
-                    for (
-                        model_instance_attribute,
-                        field_name,
-                    ) in cls._column_to_vars.get(column_names[index], []):
-                        setattr(
-                            getattr(instance, model_instance_attribute),
-                            field_name,
-                            value,
-                        )
-                yield instance
-                raw_row = cursor.fetchone()
-
-    def __init__(self):
-        self.album_on_station = AlbumOnStation()
-        self.album = Album()
-        self.user_rating = UserAlbumRating()
-        self.user_fave = UserAlbumFave()

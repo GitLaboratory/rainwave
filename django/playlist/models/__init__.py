@@ -7,4 +7,4 @@ from .album import (
 )
 from .artist import Artist
 from .group import Group, GroupOnStation
-from .song import Song, SongOnStation, SongRating, SongToGroup, SongToArtist
+from .song import Song, SongOnStation, UserSongRating, SongToGroup, SongToArtist

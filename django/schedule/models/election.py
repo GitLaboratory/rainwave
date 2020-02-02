@@ -4,8 +4,24 @@ from users.models import User
 from playlist.models import Song, SongOnStation
 from schedule.models.event import Event
 
-from utils.schedule_sequence import next_schedule_sequence_id
-from utils.election_entry_types import ElectionEntryTypes
+from schedule.models.schedule_sequence import next_schedule_sequence_id
+
+
+class ElectionEntryTypes(object):
+    CONFLICT = 0
+    WARNING = 1
+    NORMAL = 2
+    QUEUE = 3
+    REQUEST = 4
+
+
+ELECTION_ENTRY_TYPES_MODEL_CHOICES = [
+    (ElectionEntryTypes.CONFLICT, "Conflict"),
+    (ElectionEntryTypes.WARNING, "Warning"),
+    (ElectionEntryTypes.NORMAL, "Normal"),
+    (ElectionEntryTypes.QUEUE, "Queue"),
+    (ElectionEntryTypes.REQUEST, "Request"),
+]
 
 
 class ElectionEntry(models.Model):

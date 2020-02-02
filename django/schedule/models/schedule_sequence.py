@@ -1,4 +1,4 @@
-from django.db import connection, models
+from django.db import connection
 
 
 def next_schedule_sequence_id():
