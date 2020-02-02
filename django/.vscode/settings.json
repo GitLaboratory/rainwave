@@ -2,7 +2,7 @@
   "files.exclude": {
     "**/*.pyc": true,
     "static/baked/**": true,
-    "django/**": true
+    "static/album_art/**": true
   },
   "editor.formatOnSave": true,
   "prettier.endOfLine": "lf",
@@ -12,5 +12,6 @@
   "python.linting.pylintEnabled": true,
   "python.linting.enabled": true,
   "python.venvPath": "~/.local/share/virtualenvs",
-  "python.formatting.blackArgs": ["-t py37"]
+  "python.formatting.blackArgs": ["-t py37"],
+  "python.linting.pylintArgs": ["--load-plugins=pylint_django"]
 }

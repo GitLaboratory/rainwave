@@ -47,3 +47,6 @@ out.json
 .vagrant
 *.sublime-workspace
 node_modules
+
+django/server/settings/local_settings.py
+django/static/album_art
