@@ -3,7 +3,7 @@ from django.db import models
 from users.models import User
 from playlist.models import Song
 
-from utils.schedule_sequence import next_schedule_sequence_id
+from schedule.models.schedule_sequence import next_schedule_sequence_id
 
 
 class Event(models.Model):
