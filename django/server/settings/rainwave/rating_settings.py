@@ -1,4 +1,4 @@
-from server.settings.classes import RainwaveRatingMap
+from utils.rainwave_rating_map import RainwaveRatingMap
 
 # How many ratings until Rainwave will show a public rating on the site?
 RW_RATING_CALCULATION_THRESHOLD = 10

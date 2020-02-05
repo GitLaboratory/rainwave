@@ -1,74 +1,73 @@
 from django.db import models
 
-from users.models import User
-from playlist.base_classes.base_song_group import BaseSongGroup
+from django.contrib.auth import get_user_model
+from playlist.base_classes import (
+    GroupOnStationWithCooldown,
+    GroupOnStationWithCooldownQuerySet,
+    UnfilteredGroupOnStationWithCooldownManager,
+    GroupOnStationWithCooldownManager,
+    GroupBlocksElections,
+)
 
-from playlist.utils.sql_model_mapper import SQLModelMapper
-from utils.time import now
+from misc.models import Station
+
+from utils.sql_model_mapper import SQLModelMapper
 
 
-class Album(BaseSongGroup):
-    id = models.AutoField(primary_key=True, db_column="album_id")
-
-    added_on = models.IntegerField(
-        default=now, blank=True, null=True, db_column="album_added_on"
-    )
-    name = models.TextField(blank=True, null=True, db_column="album_name")
-    name_searchable = models.TextField(db_column="album_name_searchable")
-    year = models.SmallIntegerField(blank=True, null=True, db_column="album_year")
+class Album(models.Model):
+    added_on = models.DateTimeField(auto_now_add=True)
+    name = models.CharField(max_length=1024)
+    name_searchable = models.CharField(max_length=1024)
+    year = models.SmallIntegerField(blank=True, null=True)
 
     class Meta:
-        managed = False
-        db_table = "r4_albums"
         ordering = ["name"]
+
+    def __str__(self):
+        return self.name
 
 
 class UserAlbumFave(models.Model):
-    album = models.ForeignKey(Album, models.CASCADE)
-    user = models.ForeignKey(User, models.CASCADE)
-
-    fave = models.BooleanField(blank=True, null=True, db_column="album_fave")
+    album = models.ForeignKey(Album, on_delete=models.CASCADE)
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
+    fave = models.BooleanField(default=False)
 
     class Meta:
-        managed = False
-        db_table = "r4_album_faves"
         index_together = [("album", "user")]
 
 
 class UserAlbumRating(models.Model):
-    album = models.ForeignKey(Album, models.CASCADE, db_index=False)
-    user = models.ForeignKey(User, models.CASCADE, db_index=False)
+    album = models.ForeignKey(Album, on_delete=models.CASCADE)
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
+    station = models.ForeignKey(Station, on_delete=models.CASCADE)
 
-    complete = models.BooleanField(
-        blank=True, null=True, db_column="album_rating_complete"
-    )
-    rating = models.FloatField(blank=True, null=True, db_column="album_rating_user")
-    station_id = models.SmallIntegerField(db_column="sid")
+    complete = models.BooleanField(default=False)
+    rating = models.FloatField()
 
     class Meta:
-        managed = False
-        db_table = "r4_album_ratings"
-        index_together = [("album", "user", "station_id"), ("album_id", "station_id")]
+        index_together = [("album", "user", "station"), ("album", "station")]
 
 
-class AlbumOnStationQuerySet(models.QuerySet):
+class AlbumOnStationQuerySet(GroupOnStationWithCooldownQuerySet):
     rainwave_join_query = (
-        "   LEFT JOIN r4_album_ratings ON ("
-        '       original_query."__core_album_id" = r4_album_ratings.album_id '
-        '       AND original_query."__core_sid" = r4_album_ratings.sid '
-        "       AND r4_album_ratings.user_id = %(user_id)s "
-        "   ) "
-        "   LEFT JOIN r4_album_faves ON ( "
-        '       original_query."__core_album_id" = r4_album_faves.album_id '
-        "       AND r4_album_faves.user_id = %(user_id)s "
-        "   ) "
+        f'   LEFT JOIN "{UserAlbumRating._meta.db_table}" ON ('
+        f'       original_query."__core_album_id" = "{UserAlbumRating._meta.db_table}".album_id '
+        f'       AND original_query."__core_sid" = "{UserAlbumRating._meta.db_table}".station_id '
+        f'       AND "{UserAlbumRating._meta.db_table}".user_id = %(user_id)s '
+        f"   ) "
+        f'   LEFT JOIN "{UserAlbumFave._meta.db_table}" ON ( '
+        f'       original_query."__core_album_id" = "{UserAlbumFave._meta.db_table}".album_id '
+        f'       AND "{UserAlbumFave._meta.db_table}".user_id = %(user_id)s '
+        f"   ) "
     )
-    rainwave_join_query_select = 'r4_albums.album_id AS "__core_album_id"'
+    rainwave_join_query_select = (
+        f'"{Album._meta.db_table}".album_id AS "__core_album_id"'
+    )
 
     def user_album_iterator(self, user=None):
         query = str(self.query).replace(
             "SELECT ",
-            f'SELECT {self.rainwave_join_query_select}, r4_album_sid.sid AS "__core_sid", ',
+            f'SELECT {self.rainwave_join_query_select}, "{AlbumOnStation._meta.db_table}"".sid AS "__core_sid", ',
             1,
         )
         return UserAlbumOnStation.iterate(
@@ -76,82 +75,31 @@ class AlbumOnStationQuerySet(models.QuerySet):
             "SELECT "
             "   * "
             "FROM "
-            "   original_query "
-            "ORDER BY album_name ",
-            {"user_id": user.id if isinstance(user, User) else user},
+            "   original_query " + self.rainwave_join_query + "ORDER BY name ",
+            {"user_id": user.id if isinstance(user, get_user_model()) else user},
         )
 
 
-class UnfilteredAlbumOnStationManager(models.Manager):
+class UnfilteredAlbumOnStationManager(UnfilteredGroupOnStationWithCooldownManager):
     def get_queryset(self):
         return super().get_queryset().select_related("album")
 
 
-class AlbumOnStationManager(UnfilteredAlbumOnStationManager):
+class AlbumOnStationManager(GroupOnStationWithCooldownManager):
     def get_queryset(self):
-        return super().get_queryset().filter(exists=True)
+        return super().get_queryset().select_related("album").filter(exists=True)
 
 
-class AlbumOnStation(models.Model):
-    id = models.IntegerField(db_column="album_sid_id", primary_key=True, db_index=True)
+class AlbumOnStation(GroupOnStationWithCooldown, GroupBlocksElections):
     album = models.ForeignKey(Album, models.CASCADE)
-    station_id = models.SmallIntegerField(db_column="sid", db_index=True)
 
-    exists = models.BooleanField(
-        default=True, blank=True, null=True, db_column="album_exists", db_index=True
-    )
-    rating = models.FloatField(default=0, db_column="album_rating", db_index=True)
-    rating_count = models.IntegerField(
-        default=0, blank=True, null=True, db_column="album_rating_count", db_index=True
-    )
-    request_count = models.IntegerField(
-        default=0, blank=True, null=True, db_column="album_request_count"
-    )
-    requests_pending = models.BooleanField(
-        default=False,
-        blank=True,
-        null=True,
-        db_column="album_requests_pending",
-        db_index=True,
-    )
+    rating = models.FloatField(default=0, db_index=True)
+    rating_count = models.IntegerField(default=0, db_index=True)
+    request_count = models.IntegerField(default=0,)
+    requests_pending = models.BooleanField(default=False, db_index=True)
 
-    cool = models.BooleanField(
-        default=False, blank=True, null=True, db_column="album_cool",
-    )
-    cool_lowest = models.IntegerField(
-        default=0, blank=True, null=True, db_column="album_cool_lowest",
-    )
-    cool_multiply = models.FloatField(
-        default=1, blank=True, null=True, db_column="album_cool_multiply"
-    )
-    cool_override = models.IntegerField(
-        blank=True, null=True, db_column="album_cool_override"
-    )
-    elec_last = models.IntegerField(
-        default=0, blank=True, null=True, db_column="album_elec_last",
-    )
-    fave_count = models.IntegerField(
-        default=0, blank=True, null=True, db_column="album_fave_count"
-    )
-    newest_song_time = models.IntegerField(
-        default=0, blank=True, null=True, db_column="album_newest_song_time"
-    )
-    played_last = models.IntegerField(
-        default=0, blank=True, null=True, db_column="album_played_last",
-    )
-    song_count = models.SmallIntegerField(
-        default=0, blank=True, null=True, db_column="album_song_count"
-    )
-    updated = models.IntegerField(
-        default=0, blank=True, null=True, db_column="album_updated"
-    )
-    vote_count = models.IntegerField(
-        default=0, blank=True, null=True, db_column="album_vote_count"
-    )
-    vote_share = models.FloatField(
-        blank=True, default=True, db_column="album_vote_share"
-    )
-    votes_seen = models.IntegerField(default=0, db_column="album_votes_seen")
+    fave_count = models.IntegerField(default=0)
+    newest_song_added_on = models.DateTimeField(auto_now_add=True)
 
     objects = AlbumOnStationManager.from_queryset(AlbumOnStationQuerySet)()
     objects_with_deleted = UnfilteredAlbumOnStationManager.from_queryset(
@@ -159,10 +107,21 @@ class AlbumOnStation(models.Model):
     )()
 
     class Meta:
-        managed = False
-        db_table = "r4_album_sid"
-        unique_together = (("album", "station_id"),)
-        index_together = (("album", "station_id"), ("exists", "station_id"))
+        unique_together = (("album", "station"),)
+        index_together = (("album", "station"), ("enabled", "station"))
+
+    def get_art_url(self):
+        pass
+
+    @property
+    def songs(self):
+        pass
+
+    def add_song(self, song):
+        pass
+
+    def remove_song(self, song):
+        pass
 
 
 class UserAlbumOnStation(SQLModelMapper):

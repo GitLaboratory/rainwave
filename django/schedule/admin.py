@@ -1,3 +1,13 @@
 from django.contrib import admin
 
-# Register your models here.
+from schedule.models import Event, Producer
+
+
+@admin.register(Event)
+class EventAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(Producer)
+class ProducerAdmin(admin.ModelAdmin):
+    pass

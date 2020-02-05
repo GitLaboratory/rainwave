@@ -1,224 +1,214 @@
 from django.db import models
+from django.contrib.auth import get_user_model
+from django.contrib.postgres.fields import JSONField
 
-from users.models import User
-from playlist.models.album import Album, UserAlbumOnStation, AlbumOnStationQuerySet, UserAlbumRating, UserAlbumFave, AlbumOnStation
+from playlist.models.album import (
+    Album,
+    UserAlbumOnStation,
+    AlbumOnStationQuerySet,
+    UserAlbumRating,
+    UserAlbumFave,
+    AlbumOnStation,
+)
 from playlist.models.artist import Artist
 from playlist.models.group import Group
+from misc.models import Station
 
-from playlist.utils.sql_model_mapper import SQLModelMapper
-from utils.time import now
+from playlist.base_classes import (
+    ObjectWithCooldown,
+    ObjectWithVoteStats,
+    ObjectOnStation,
+    ObjectWithCooldownManager,
+    ObjectOnStationQuerySet,
+    ObjectWithCooldownQuerySet,
+)
+
+
+from utils.sql_model_mapper import SQLModelMapper
 
 
 class SongToArtist(models.Model):
-    song = models.ForeignKey("Song", models.CASCADE)
-    artist = models.OneToOneField(Artist, models.CASCADE)
-    order = models.SmallIntegerField(
-        default=0, blank=True, null=True, db_column="artist_order"
-    )
-    is_tag = models.BooleanField(
-        default=True, blank=True, null=True, db_column="artist_is_tag"
-    )
+    song = models.ForeignKey("Song", on_delete=models.CASCADE)
+    artist = models.ForeignKey(Artist, on_delete=models.CASCADE)
+    order = models.SmallIntegerField(default=0)
+    is_tag = models.BooleanField(default=True)
 
     class Meta:
-        managed = False
-        db_table = "r4_song_artist"
         unique_together = (("artist", "song"),)
 
 
 class SongToGroup(models.Model):
-    song = models.ForeignKey("Song", models.CASCADE)
-    group = models.OneToOneField(Group, models.CASCADE)
-    is_tag = models.BooleanField(
-        default=True, blank=True, null=True, db_column="group_is_tag"
-    )
+    song = models.ForeignKey("Song", on_delete=models.CASCADE)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE)
+    is_tag = models.BooleanField(default=True)
 
     class Meta:
-        managed = False
-        db_table = "r4_song_group"
         unique_together = (("group", "song"),)
 
 
-class Song(models.Model):
-    id = models.AutoField(primary_key=True, db_column="song_id")
+class SongManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(enabled=True)
+
+
+class Song(ObjectWithCooldown, ObjectWithVoteStats):
+    objects = SongManager.from_queryset(models.QuerySet)()
+    objects_with_disabled = models.Manager.from_queryset(models.QuerySet)()
+
+    enabled = models.BooleanField(default=True, db_index=True)
+    origin_station = models.ForeignKey(
+        Station, blank=True, null=True, on_delete=models.SET_NULL
+    )
+
+    # Related Metadata
     album = models.ForeignKey(Album, models.CASCADE)
     artists = models.ManyToManyField(Artist, through=SongToArtist)
     groups = models.ManyToManyField(Group, through=SongToGroup)
 
-    rating = models.FloatField(default=0, db_column="song_rating", db_index=True)
-    rating_count = models.IntegerField(
-        default=0, db_column="song_rating_count", db_index=True
-    )
-    verified = models.BooleanField(
-        default=True, db_column="song_verified", db_index=True
-    )
+    # Rainwave data
+    added_on = models.DateTimeField(auto_now_add=True)
+    artist_json = JSONField(default=list)
+    fave_count = models.IntegerField(default=0)
+    file_mtime = models.IntegerField()
+    filename = models.TextField()
+    rating = models.FloatField(blank=True, null=True, db_index=True)
+    rating_count = models.IntegerField(default=0, db_index=True)
+    request_count = models.IntegerField(default=0)
+    request_only = models.BooleanField(default=False, db_index=False)
+    scanned = models.BooleanField(default=True)
 
-    added_on = models.IntegerField(default=now, db_column="song_added_on")
-    artist_parseable = models.TextField(db_column="song_artist_parseable")
-    artist_tag = models.TextField(db_column="song_artist_tag")
-    cool_multiply = models.FloatField(default=1, db_column="song_cool_multiply")
-    cool_override = models.IntegerField(
-        blank=True, null=True, db_column="song_cool_override"
-    )
-    disc_number = models.SmallIntegerField(
-        blank=True, null=True, db_column="song_disc_number"
-    )
-    fave_count = models.IntegerField(default=0, db_column="song_fave_count")
-    file_mtime = models.IntegerField(db_column="song_file_mtime")
-    filename = models.TextField(db_column="song_filename")
-    length = models.SmallIntegerField(db_column="song_length")
-    link_text = models.TextField(blank=True, null=True, db_column="song_link_text")
-    origin_sid = models.SmallIntegerField(db_column="song_origin_sid")
-    replay_gain = models.TextField(blank=True, null=True, db_column="song_replay_gain")
-    request_count = models.IntegerField(default=0, db_column="song_request_count")
-    scanned = models.BooleanField(default=True, db_column="song_scanned")
-    title = models.TextField(db_column="song_title")
-    title_searchable = models.TextField(db_column="song_title_searchable")
-    track_number = models.SmallIntegerField(
-        blank=True, null=True, db_column="song_track_number"
-    )
-    url = models.TextField(blank=True, null=True, db_column="song_url")
-    vote_count = models.IntegerField(default=0, db_column="song_vote_count")
-    vote_share = models.FloatField(blank=True, null=True, db_column="song_vote_share")
-    votes_seen = models.IntegerField(default=0, db_column="song_votes_seen")
-    year = models.SmallIntegerField(blank=True, null=True, db_column="song_year")
+    # ID3 Tags / Song Data
+    disc_number = models.SmallIntegerField(blank=True, null=True)
+    length = models.SmallIntegerField()
+    link_text = models.TextField(blank=True, null=True)
+    replay_gain = models.TextField(blank=True, null=True)
+    name = models.TextField()
+    name_searchable = models.TextField()
+    track_number = models.SmallIntegerField(blank=True, null=True)
+    url = models.TextField(blank=True, null=True)
+    year = models.SmallIntegerField(blank=True, null=True)
 
     class Meta:
-        managed = False
-        db_table = "r4_songs"
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
 
 
-class SongOnStationQuerySet(models.QuerySet):
-    def _get_rainwave_query(self, user, sort_sql, extra_selects="", extra_joins=""):
-        query = str(self.query).replace(
+class SongOnStationQuerySet(ObjectOnStationQuerySet, ObjectWithCooldownQuerySet):
+    @classmethod
+    def _get_left_joined_query(
+        cls, query, user, sort_sql, extra_selects="", extra_joins=""
+    ):
+        query = str(query).replace(
             "SELECT ",
-            f'SELECT r4_song_sid.song_id AS "__core_song_id", r4_song_sid.sid AS "__core_sid", {extra_selects}',
-            1,
+            (
+                "SELECT "
+                f'  "{SongOnStation._meta.db_table}".song_id AS "__core_song_id", '
+                f'  "{SongOnStation._meta.db_table}".sid AS "__core_sid", '
+                f"   {extra_selects} "
+            ),
+            count=1,
         )
         return (
             f"WITH original_query AS ({query}) "
             "SELECT "
             "   * "
             "FROM "
-            "   original_query " + extra_joins + "   LEFT JOIN r4_song_ratings ON ("
-            '       original_query."__core_song_id" = r4_song_ratings.song_id '
-            "       AND r4_song_ratings.user_id = %(user_id)s "
-            "   ) "
+            f"   original_query {extra_joins} "
+            f'   LEFT JOIN "{UserSongRating._meta.db_table}" ON ('
+            f'      original_query."__core_song_id" = "{UserSongRating._meta.db_table}".song_id '
+            f'       AND "{UserSongRating._meta.db_table}".user_id = %(user_id)s '
+            "    ) "
+            f"   LEFT JOIN {UserSongFave._meta.db_table} ON ("
+            f'       original_query."__core_song_id" = "{UserSongFave._meta.db_table}".song_id '
+            f'       AND "{UserSongFave._meta.db_table}".user_id = %(user_id)s '
+            "    ) "
             f"ORDER BY {sort_sql} ",
-            {"user_id": user.id if isinstance(user, User) else user},
+            {"user_id": user.id if isinstance(user, get_user_model()) else user},
+        )
+
+    @classmethod
+    def get_user_song_album_left_joined_query(cls, query, user, sort_sql):
+        return cls._get_left_joined_query(
+            query=query,
+            user=user,
+            sort_sql=sort_sql,
+            extra_selects=f"{AlbumOnStationQuerySet.rainwave_join_query_select}, ",
+            extra_joins=AlbumOnStationQuerySet.rainwave_join_query,
         )
 
     def user_song_iterator(self, user=None, sort_sql="song_title"):
-        return UserSongOnStation.iterate(*self._get_rainwave_query(user, sort_sql))
+        return UserSongOnStation.iterate(
+            *self.__class__._get_left_joined_query(self.query, user, sort_sql)
+        )
 
     def user_song_album_iterator(self, user=None, sort_sql="song_title"):
         return UserSongAlbumOnStation.iterate(
-            *self.select_related("song__album")._get_rainwave_query(
-                user,
-                sort_sql,
-                extra_selects=f"{AlbumOnStationQuerySet.rainwave_join_query_select}, ",
-                extra_joins=AlbumOnStationQuerySet.rainwave_join_query,
+            *self.__class__.get_user_song_album_left_joined_query(
+                query=self.select_related("song__album").query,
+                user=user,
+                sort_sql=sort_sql,
             )
         )
 
 
-class UnfilteredSongOnStationManager(models.Manager):
+class UnfilteredSongOnStationManager(ObjectWithCooldownManager):
     def get_queryset(self):
         return super().get_queryset().select_related("song")
 
 
 class SongOnStationManager(UnfilteredSongOnStationManager):
     def get_queryset(self):
-        return super().get_queryset().filter(exists=True, song__verified=True)
+        return super().get_queryset().filter(exists=True, song__enabled=True)
 
 
-class SongOnStation(models.Model):
-    id = models.IntegerField(db_column="song_sid_id", primary_key=True)
-    song = models.ForeignKey(Song, models.CASCADE)
-
-    station_id = models.SmallIntegerField(db_column="sid", db_index=True)
-    cool = models.BooleanField(
-        default=False, blank=True, null=True, db_column="song_cool", db_index=True
-    )
-    elec_blocked = models.BooleanField(
-        default=False,
-        blank=True,
-        null=True,
-        db_column="song_elec_blocked",
-        db_index=True,
-    )
-    exists = models.BooleanField(
-        default=True, blank=True, null=True, db_column="song_exists", db_index=True
-    )
-    request_only = models.BooleanField(
-        default=False,
-        blank=True,
-        null=True,
-        db_column="song_request_only",
-        db_index=True,
-    )
-
-    cool_end = models.IntegerField(
-        default=0, blank=True, null=True, db_column="song_cool_end"
-    )
-    elec_appearances = models.IntegerField(
-        default=0, blank=True, null=True, db_column="song_elec_appearances"
-    )
-    elec_blocked_by = models.TextField(
-        blank=True, null=True, db_column="song_elec_blocked_by"
-    )
-    elec_blocked_num = models.SmallIntegerField(
-        default=0, blank=True, null=True, db_column="song_elec_blocked_num"
-    )
-    elec_last = models.IntegerField(
-        default=0, blank=True, null=True, db_column="song_elec_last"
-    )
-    played_last = models.IntegerField(
-        blank=True, null=True, db_column="song_played_last"
-    )
-    request_only_end = models.IntegerField(
-        default=0, blank=True, null=True, db_column="song_request_only_end"
-    )
-
+class SongOnStation(ObjectOnStation, ObjectWithCooldown):
     objects = SongOnStationManager.from_queryset(SongOnStationQuerySet)()
     objects_with_deleted = UnfilteredSongOnStationManager.from_queryset(
         SongOnStationQuerySet
     )()
 
+    song = models.ForeignKey(Song, on_delete=models.CASCADE)
+    electable = models.BooleanField(default=True, db_index=True)
+    electable_blocked_by = models.CharField(max_length=64, blank=True, null=True)
+    electable_blocked_for = models.SmallIntegerField(default=0)
+
     class Meta:
-        managed = False
-        db_table = "r4_song_sid"
-        unique_together = (("song", "station_id"),)
+        unique_together = (("song", "station"),)
+        index_together = (("song", "station"),)
 
 
 class UserSongRating(models.Model):
-    song = models.ForeignKey(Song, models.CASCADE)
-    user = models.ForeignKey(User, models.CASCADE)
-    rating_user = models.FloatField(blank=True, null=True, db_column="song_rating_user")
-    rated_at = models.IntegerField(blank=True, null=True, db_column="song_rated_at")
-    rated_at_rank = models.IntegerField(
-        blank=True, null=True, db_column="song_rated_at_rank"
-    )
-    rated_at_count = models.IntegerField(
-        blank=True, null=True, db_column="song_rated_at_count"
-    )
-    fave = models.BooleanField(
-        blank=True, null=True, db_column="song_fave", db_index=True
-    )
+    song = models.ForeignKey(Song, on_delete=models.CASCADE)
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
+    rating = models.FloatField()
+    when = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        managed = False
-        db_table = "r4_song_ratings"
+        unique_together = (("user", "song"),)
+        index_together = (("user", "song"),)
+
+
+class UserSongFave(models.Model):
+    song = models.ForeignKey(Song, on_delete=models.CASCADE)
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
+    fave = models.BooleanField()
+
+    class Meta:
         unique_together = (("user", "song"),)
         index_together = (("user", "song"),)
 
 
 class UserSongOnStation(SQLModelMapper):
     user_rating: UserSongRating = None
+    user_fave: UserSongFave = None
     song_on_station: SongOnStation = None
     song: Song = None
 
     _models = (
         (UserSongRating, "user_rating"),
+        (UserSongFave, "user_fave"),
         (SongOnStation, "song_on_station"),
         (Song, "song"),
     )
@@ -226,6 +216,7 @@ class UserSongOnStation(SQLModelMapper):
 
 class UserSongAlbumOnStation(SQLModelMapper):
     user_rating: UserSongRating = None
+    user_fave: UserSongFave = None
     song_on_station: SongOnStation = None
     song: Song = None
     album_on_station: AlbumOnStation = None

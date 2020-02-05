@@ -1,59 +1,77 @@
 from django.db import models
+from django.contrib.auth import get_user_model
 
-from users.models import User
-from playlist.models import Song
+from misc.models import Station
+from playlist.models import (
+    SongOnStation,
+    SongOnStationQuerySet,
+    UserSongAlbumOnStation,
+    UserSongRating,
+    UserSongFave,
+    Song,
+    AlbumOnStation,
+    Album,
+    UserAlbumRating,
+    UserAlbumFave,
+)
+
+from utils.sql_model_mapper import SQLModelMapper
 
 
 class RequestLinePosition(models.Model):
-    user = models.OneToOneField(User, models.CASCADE, primary_key=True)
-    station_id = models.SmallIntegerField(db_column="sid")
-    wait_start = models.IntegerField(blank=True, null=True, db_column="line_wait_start")
-    expiry_tune_in = models.IntegerField(
-        blank=True, null=True, db_column="line_expiry_tune_in"
+    user = models.OneToOneField(
+        get_user_model(), on_delete=models.CASCADE, unique=True, db_index=True
     )
-    expiry_election = models.IntegerField(
-        blank=True, null=True, db_column="line_expiry_election"
-    )
-    has_had_valid_song = models.BooleanField(
-        blank=True, null=True, db_column="line_has_had_valid"
-    )
+    station = models.ForeignKey(Station, on_delete=models.CASCADE, db_index=True)
+    wait_start = models.IntegerField(blank=True, null=True)
+    expires_if_not_tuned_in_at = models.DateTimeField(blank=True, null=True)
+    expires_if_no_valid_song_at = models.DateTimeField(blank=True, null=True)
+    has_had_valid_song = models.BooleanField(default=True)
 
     class Meta:
-        managed = False
-        db_table = "r4_request_line"
+        ordering = ["id"]
+
+
+class RequestQuerySet(models.QuerySet):
+    def user_song_album_iterator(self, user, sort_sql="position, id"):
+        return UserRequestSongAlbumOnStation.iterate(
+            *SongOnStationQuerySet.get_user_song_album_left_joined_query(
+                query=self.select_related("song_on_station__song__album").query,
+                user=user,
+                sort_sql=sort_sql,
+            )
+        )
 
 
 class Request(models.Model):
-    id = models.AutoField(primary_key=True, db_column="reqstor_id")
-    order = models.SmallIntegerField(blank=True, null=True, db_column="reqstor_order")
-    user = models.ForeignKey(User, models.CASCADE, db_column="user_id")
-    song = models.ForeignKey(Song, models.CASCADE, db_column="song_id")
-    station_id = models.SmallIntegerField(db_column="sid")
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
+    song_on_station = models.ForeignKey(SongOnStation, on_delete=models.CASCADE)
+    position = models.SmallIntegerField(default=0)
 
     class Meta:
-        managed = False
-        db_table = "r4_request_store"
-        ordering = ["order", "id"]
+        ordering = ["position", "id"]
+
+
+class UserRequestSongAlbumOnStation(SQLModelMapper):
+    request: Request = None
+    user_rating: UserSongRating = None
+    user_fave: UserSongFave = None
+    song_on_station: SongOnStation = None
+    song: Song = None
+    album_on_station: AlbumOnStation = None
+    album: Album = None
+    user_rating: UserAlbumRating = None
+    user_fave: UserAlbumFave = None
+
+    _models = ((Request, "request"),) + UserSongAlbumOnStation._models
 
 
 class FulfilledRequest(models.Model):
-    request_id = models.AutoField(primary_key=True)
-    user = models.ForeignKey(User, models.CASCADE)
-    song = models.ForeignKey(Song, models.CASCADE)
-    fulfilled_at = models.IntegerField(
-        blank=True, null=True, db_column="request_fulfilled_at"
-    )
-    wait_time = models.IntegerField(
-        blank=True, null=True, db_column="request_wait_time"
-    )
-    line_size = models.IntegerField(
-        blank=True, null=True, db_column="request_line_size"
-    )
-    count_at_time = models.IntegerField(
-        blank=True, null=True, db_column="request_at_count"
-    )
-    sid = models.SmallIntegerField(blank=True, null=True)
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
+    song_on_station = models.ForeignKey(SongOnStation, on_delete=models.CASCADE)
+    fulfilled_at = models.DateTimeField(auto_now_add=True)
+    wait_time_for_fulfillment = models.IntegerField()
+    line_size_at_fulfillment = models.IntegerField()
 
     class Meta:
-        managed = False
-        db_table = "r4_request_history"
+        ordering = ["id"]

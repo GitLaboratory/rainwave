@@ -4,9 +4,6 @@ RW_SCANNER_RENAME_FILES = False
 # Allow songs to have the same ID3 Title and Album, with different filenames?
 RW_SCANNER_ALLOW_DUPLICATE_SONGS = False
 
-# Save tracknumbers to the database?
-RW_SCANNER_SAVE_TRACKNUMBERS = True
-
 # Normalize volume before adding?  Does not alter original MP3s.
 # (requires mp3gain executable to be on the PATH)
 RW_SCANNER_MP3GAIN = False

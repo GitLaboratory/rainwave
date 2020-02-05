@@ -4,7 +4,7 @@ from django.db import connection
 
 class SQLModelMapper:
     # we can't set these to null or pylint complains :|
-    _models:set = ()
+    _models: set = ()
     _column_to_vars: Dict[str, Set[str]] = {}
 
     @classmethod
