@@ -1,6 +1,14 @@
+import os
+import subprocess
+from mutagen.mp3 import MP3
+
 from django.db import models
+from django.db.models import Q
 from django.contrib.auth import get_user_model
 from django.contrib.postgres.fields import JSONField
+from django.conf import settings
+
+from config.models import Station
 
 from playlist.models.album import (
     Album,
@@ -10,10 +18,6 @@ from playlist.models.album import (
     UserAlbumFave,
     AlbumOnStation,
 )
-from playlist.models.artist import Artist
-from playlist.models.group import Group
-from misc.models import Station
-
 from playlist.base_classes import (
     ObjectWithCooldown,
     ObjectWithVoteStats,
@@ -22,19 +26,36 @@ from playlist.base_classes import (
     ObjectOnStationQuerySet,
     ObjectWithCooldownQuerySet,
 )
-
+from playlist.models.artist import Artist
+from playlist.models.group import Group
+from playlist.exceptions import ScanMetadataException
 
 from utils.sql_model_mapper import SQLModelMapper
+from utils.parse_string_to_number import parse_string_to_number
+from utils import filetools
+from utils.make_searchable_string import make_searchable_string
+
+_mp3gain_path = filetools.which("mp3gain")
+
+
+def set_umask():
+    os.setpgrp()
+    os.umask(0o02)
 
 
 class SongToArtist(models.Model):
     song = models.ForeignKey("Song", on_delete=models.CASCADE)
     artist = models.ForeignKey(Artist, on_delete=models.CASCADE)
-    order = models.SmallIntegerField(default=0)
-    is_tag = models.BooleanField(default=True)
+    position = models.SmallIntegerField(default=0)
 
     class Meta:
         unique_together = (("artist", "song"),)
+
+    def to_json(self):
+        return {
+            "name": self.artist.name,
+            "order": self.position,
+        }
 
 
 class SongToGroup(models.Model):
@@ -62,8 +83,6 @@ class Song(ObjectWithCooldown, ObjectWithVoteStats):
 
     # Related Metadata
     album = models.ForeignKey(Album, models.CASCADE)
-    artists = models.ManyToManyField(Artist, through=SongToArtist)
-    groups = models.ManyToManyField(Group, through=SongToGroup)
 
     # Rainwave data
     added_on = models.DateTimeField(auto_now_add=True)
@@ -75,13 +94,13 @@ class Song(ObjectWithCooldown, ObjectWithVoteStats):
     rating_count = models.IntegerField(default=0, db_index=True)
     request_count = models.IntegerField(default=0)
     request_only = models.BooleanField(default=False, db_index=False)
-    scanned = models.BooleanField(default=True)
+    scanned = models.BooleanField(default=False)
 
     # ID3 Tags / Song Data
     disc_number = models.SmallIntegerField(blank=True, null=True)
     length = models.SmallIntegerField()
     link_text = models.TextField(blank=True, null=True)
-    replay_gain = models.TextField(blank=True, null=True)
+    replaygain = models.TextField(blank=True, null=True)
     name = models.TextField()
     name_searchable = models.TextField()
     track_number = models.SmallIntegerField(blank=True, null=True)
@@ -93,6 +112,126 @@ class Song(ObjectWithCooldown, ObjectWithVoteStats):
 
     def __str__(self):
         return self.name
+
+    @staticmethod
+    def parse_tag(filename, mp3_file, id3, required=False):
+        tags = mp3_file.tags.getall(id3)
+        tag = None
+        if len(tags) > 0 and len(str(tags[0])) > 0:
+            tag = str(tags[0]).strip()
+        if not tag and required:
+            raise ScanMetadataException(f"Song {filename} has no {id3} tag.")
+        return tag
+
+    @staticmethod
+    def get_replaygain(mp3_file):
+        replaygain_tag = None
+        for xxx_tag in mp3_file.tags.getall("TXXX"):
+            if xxx_tag.desc.lower() == "replaygain_track_gain":
+                replaygain_tag = str(xxx_tag)
+        return replaygain_tag
+
+    @classmethod
+    def scan(cls, filename, origin_station, stations):
+        mp3_file = MP3(filename, translate=False)
+
+        if not mp3_file.tags:
+            cls.objects.filter(filename=filename).update(enabled=False)
+            raise ScanMetadataException('Song filename "%s" has no tags.' % filename)
+
+        name = cls.parse_tag(filename, mp3_file, "TIT2", required=True)
+        album_tag = cls.parse_tag(filename, mp3_file, "TALB", required=True)
+        artists_tag = cls.parse_tag(filename, mp3_file, "TPE1", required=True)
+
+        song = cls.objects_with_disabled.filter(
+            Q(filename__iexact=filename)
+            | Q(name__iexact=name, album__name__iexact=album_tag)
+        ).update_or_create(
+            filename=filename,
+            name=name,
+            name_searchable=make_searchable_string(name),
+            scanned=True,
+            origin_station=origin_station,
+            file_mtime=os.stat(filename)[8],
+        )[
+            0
+        ]
+
+        song.track_number = parse_string_to_number(
+            cls.parse_tag(filename, mp3_file, "TRCK")
+        )
+        song.disc_number = parse_string_to_number(
+            cls.parse_tag(filename, mp3_file, "TPOS")
+        )
+        song.link_text = cls.parse_tag(filename, mp3_file, "COMM")
+        song.url = cls.parse_tag(filename, mp3_file, "WXXX")
+        song.year = parse_string_to_number(
+            cls.parse_tag(filename, mp3_file, "TYER")
+            or cls.parse_tag(filename, mp3_file, "TDRC")
+        )
+        song.replaygain = cls.get_replaygain(mp3_file)
+        song.length = int(mp3_file.info.length)
+
+        if not song.replaygain and settings.RW_SCANNER_MP3GAIN:
+            gain_std, gain_error = subprocess.Popen(
+                [_mp3gain_path, "-o", "-q", "-s", "i", "-p", "-k", "-T", filename],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                preexec_fn=set_umask,
+            ).communicate()
+            if len(gain_error) > 0:
+                raise ScanMetadataException(
+                    'Error when replay gaining "%s": %s' % (filename, gain_error)
+                )
+            mp3_file = MP3(filename, translate=False)
+            song.replaygain = cls.get_replaygain(mp3_file)
+
+        song.save()
+
+        song.songonstation_set.filter(station__in=stations).update(enabled=True)
+        song.songonstation_set.exclude(station__in=stations).update(enabled=False)
+
+        # Associate these after saving
+        song.album = Album.objects.get_or_create(
+            name__iexact=album_tag, defaults={"name": album_tag}
+        )[0]
+        song.album.determine_enabled()
+
+        song_to_artists = set()
+        for index, artist_tag in enumerate(artists_tag):
+            artist_tag = artist_tag.strip()
+            artist = Artist.objects.get_or_create(
+                name__iexact=artist_tag, defaults={"name": artist_tag}
+            )[0]
+            song_to_artist = SongToArtist.objects.update_or_create(
+                artist=artist, defaults={"artist": artist, "position": index}
+            )[0]
+            song_to_artists.add(song_to_artist)
+        song.songtoartist_set.set(song_to_artists)
+
+        song_to_groups = set()
+        groups_to_check = set(
+            stg.group for stg in song.songtogroup_set.select_related("group").all()
+        )
+        for genre_tag in cls.parse_tag(filename, mp3_file, "TCON").split(","):
+            genre_tag = genre_tag.strip()
+            group = Group.objects.get_or_create(
+                name__iexact=genre_tag, defaults={"name": genre_tag}
+            )[0]
+            groups_to_check.add(group)
+            song_to_groups.add(
+                SongToGroup.objects.update_or_create(
+                    group=group, defaults={"group": group, "is_tag": True}
+                )[0]
+            )
+        for song_to_group in song.songtogroup_set.filter(is_tag=False):
+            song_to_groups.add(song_to_group)
+        song.songtogroup_set.set(song_to_groups)
+        for group in groups_to_check:
+            group.determine_enabled()
+
+        song.artist_json = [stg.to_json() for stg in song_to_artists]
+        song.save()
 
 
 class SongOnStationQuerySet(ObjectOnStationQuerySet, ObjectWithCooldownQuerySet):

@@ -1,5 +1,6 @@
 from django.contrib import admin
 
+
 from playlist.models import (
     Album,
     Artist,

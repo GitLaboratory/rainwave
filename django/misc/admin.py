@@ -1,23 +1,19 @@
 from django.contrib import admin
 
-from misc.models import Donation, ListenerCount, Station, Relay
+
+from misc.models import Donation, ListenerCount
+
+from utils.superuser_required_admin import (
+    StaffReadOnlyMixin,
+    SuperuserRequiredAdminMixin,
+)
 
 
 @admin.register(Donation)
-class DonationAdmin(admin.ModelAdmin):
+class DonationAdmin(admin.ModelAdmin, SuperuserRequiredAdminMixin):
     pass
 
 
 @admin.register(ListenerCount)
-class ListenerCountAdmin(admin.ModelAdmin):
-    pass
-
-
-@admin.register(Station)
-class StationAdmin(admin.ModelAdmin):
-    pass
-
-
-@admin.register(Relay)
-class RelayAdmin(admin.ModelAdmin):
+class ListenerCountAdmin(admin.ModelAdmin, StaffReadOnlyMixin):
     pass

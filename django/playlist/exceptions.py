@@ -1,0 +1,2 @@
+class ScanMetadataException(Exception):
+    pass

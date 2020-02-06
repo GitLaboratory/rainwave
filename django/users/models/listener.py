@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 
-from misc.models import Station, Relay
+from config.models import Station, Relay
 
 
 class Listener(models.Model):

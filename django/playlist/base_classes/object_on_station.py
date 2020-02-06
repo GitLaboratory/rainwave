@@ -1,6 +1,6 @@
 from django.db import models
 
-from misc.models import Station
+from config.models import Station
 
 
 class ObjectOnStationQuerySet(models.QuerySet):

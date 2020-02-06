@@ -1,17 +1,24 @@
 from django.contrib import admin
+
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import UserAdmin
 
 from users.models import APIKey, Listener, UserSettings
 
+from utils.superuser_required_admin import (
+    StaffReadOnlyMixin,
+    SuperuserRequiredAdminMixin,
+)
+
 
 @admin.register(APIKey)
-class APIKeyAdmin(admin.ModelAdmin):
+class APIKeyAdmin(admin.ModelAdmin, SuperuserRequiredAdminMixin):
     pass
 
 
 @admin.register(Listener)
-class ListenerAdmin(admin.ModelAdmin):
+class ListenerAdmin(admin.ModelAdmin, StaffReadOnlyMixin):
     pass
 
 
@@ -36,5 +43,5 @@ admin.site.unregister(get_user_model())
 
 
 @admin.register(get_user_model())
-class RainwaveUserAdmin(UserAdmin):
+class RainwaveUserAdmin(UserAdmin, SuperuserRequiredAdminMixin):
     inlines = UserAdmin.inlines + [SettingsInline]

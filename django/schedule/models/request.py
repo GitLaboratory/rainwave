@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 
-from misc.models import Station
+from config.models import Station
 from playlist.models import (
     SongOnStation,
     SongOnStationQuerySet,

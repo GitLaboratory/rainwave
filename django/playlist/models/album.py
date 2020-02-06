@@ -9,7 +9,7 @@ from playlist.base_classes import (
     GroupBlocksElections,
 )
 
-from misc.models import Station
+from config.models import Station
 
 from utils.sql_model_mapper import SQLModelMapper
 
@@ -25,6 +25,10 @@ class Album(models.Model):
 
     def __str__(self):
         return self.name
+
+    def determine_enabled(self):
+        for album_on_station in self.albumonstation_set.all():
+            album_on_station.determine_enabled()
 
 
 class UserAlbumFave(models.Model):
@@ -115,13 +119,13 @@ class AlbumOnStation(GroupOnStationWithCooldown, GroupBlocksElections):
 
     @property
     def songs(self):
-        pass
+        return self.album.song_set.filter(station=self.station)
 
-    def add_song(self, song):
-        pass
-
-    def remove_song(self, song):
-        pass
+    def determine_enabled(self):
+        enabled = self.songs.exists()
+        if enabled != self.enabled:
+            self.enabled = enabled
+            self.save()
 
 
 class UserAlbumOnStation(SQLModelMapper):

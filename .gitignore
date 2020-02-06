@@ -48,5 +48,5 @@ out.json
 *.sublime-workspace
 node_modules
 
-django/server/settings/local_settings.py
+django/base/settings/local_settings.py
 django/static/album_art
