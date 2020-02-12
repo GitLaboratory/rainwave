@@ -24,3 +24,4 @@ from .song import (
     UserSongOnStation,
     UserSongAlbumOnStation,
 )
+from .scan_error import ScanError

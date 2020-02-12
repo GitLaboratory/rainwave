@@ -18,7 +18,6 @@ class Album(models.Model):
     added_on = models.DateTimeField(auto_now_add=True)
     name = models.CharField(max_length=1024)
     name_searchable = models.CharField(max_length=1024)
-    year = models.SmallIntegerField(blank=True, null=True)
 
     class Meta:
         ordering = ["name"]
@@ -71,7 +70,7 @@ class AlbumOnStationQuerySet(GroupOnStationWithCooldownQuerySet):
     def user_album_iterator(self, user=None):
         query = str(self.query).replace(
             "SELECT ",
-            f'SELECT {self.rainwave_join_query_select}, "{AlbumOnStation._meta.db_table}"".sid AS "__core_sid", ',
+            f'SELECT {self.rainwave_join_query_select}, "{AlbumOnStation._meta.db_table}"".station_id AS "__core_sid", ',
             1,
         )
         return UserAlbumOnStation.iterate(
@@ -91,7 +90,7 @@ class UnfilteredAlbumOnStationManager(UnfilteredGroupOnStationWithCooldownManage
 
 class AlbumOnStationManager(GroupOnStationWithCooldownManager):
     def get_queryset(self):
-        return super().get_queryset().select_related("album").filter(exists=True)
+        return super().get_queryset().select_related("album").filter(enabled=True)
 
 
 class AlbumOnStation(GroupOnStationWithCooldown, GroupBlocksElections):

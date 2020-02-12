@@ -1,12 +1,7 @@
 from django.contrib import admin
 
 
-from playlist.models import (
-    Album,
-    Artist,
-    Group,
-    Song,
-)
+from playlist.models import Album, Artist, Group, Song, ScanError
 
 
 @admin.register(Album)
@@ -26,4 +21,9 @@ class GroupAdmin(admin.ModelAdmin):
 
 @admin.register(Song)
 class SongAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(ScanError)
+class ScanErrorAdmin(admin.ModelAdmin):
     pass

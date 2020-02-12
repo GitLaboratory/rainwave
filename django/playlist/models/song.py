@@ -37,6 +37,18 @@ from utils.make_searchable_string import make_searchable_string
 
 _mp3gain_path = filetools.which("mp3gain")
 
+ID3_TAG_TO_READABLE_NAME = {
+    "TIT2": "Title",
+    "TALB": "Album",
+    "TPE1": "Artist",
+    "TRCK": "Track Number",
+    "TPOS": "Disc Number",
+    "COMM": "Comment/Link Text",
+    "WXXX": "URL",
+    "TYER": "Year",
+    "TDRC": "Year",
+}
+
 
 def set_umask():
     os.setpgrp()
@@ -120,8 +132,10 @@ class Song(ObjectWithCooldown, ObjectWithVoteStats):
         if len(tags) > 0 and len(str(tags[0])) > 0:
             tag = str(tags[0]).strip()
         if not tag and required:
-            raise ScanMetadataException(f"Song {filename} has no {id3} tag.")
-        return tag
+            raise ScanMetadataException(
+                f"Song {filename} has no {ID3_TAG_TO_READABLE_NAME.get(id3, id3)} tag."
+            )
+        return tag or ""
 
     @staticmethod
     def get_replaygain(mp3_file):
@@ -137,26 +151,33 @@ class Song(ObjectWithCooldown, ObjectWithVoteStats):
 
         if not mp3_file.tags:
             cls.objects.filter(filename=filename).update(enabled=False)
-            raise ScanMetadataException('Song filename "%s" has no tags.' % filename)
+            raise ScanMetadataException(f'Song filename "{filename}" has no tags.')
 
         name = cls.parse_tag(filename, mp3_file, "TIT2", required=True)
         album_tag = cls.parse_tag(filename, mp3_file, "TALB", required=True)
         artists_tag = cls.parse_tag(filename, mp3_file, "TPE1", required=True)
 
-        song = cls.objects_with_disabled.filter(
-            Q(filename__iexact=filename)
-            | Q(name__iexact=name, album__name__iexact=album_tag)
-        ).update_or_create(
-            filename=filename,
-            name=name,
-            name_searchable=make_searchable_string(name),
-            scanned=True,
-            origin_station=origin_station,
-            file_mtime=os.stat(filename)[8],
-        )[
-            0
-        ]
+        song = (
+            cls.objects_with_disabled.filter(
+                Q(filename__iexact=filename)
+                | Q(name__iexact=name, album__name__iexact=album_tag)
+            ).first()
+            or cls()
+        )
 
+        song_mtime = os.stat(filename)[8]
+
+        song.scanned = True
+
+        if song.file_mtime == song_mtime:
+            song.save()
+            return song
+
+        song.filename = filename
+        song.name = name
+        song.name_searchable = make_searchable_string(name)
+        song.origin_station = origin_station
+        song.file_mtime = song_mtime
         song.track_number = parse_string_to_number(
             cls.parse_tag(filename, mp3_file, "TRCK")
         )
@@ -173,7 +194,7 @@ class Song(ObjectWithCooldown, ObjectWithVoteStats):
         song.length = int(mp3_file.info.length)
 
         if not song.replaygain and settings.RW_SCANNER_MP3GAIN:
-            gain_std, gain_error = subprocess.Popen(
+            _gain_std, gain_error = subprocess.Popen(
                 [_mp3gain_path, "-o", "-q", "-s", "i", "-p", "-k", "-T", filename],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
@@ -186,15 +207,19 @@ class Song(ObjectWithCooldown, ObjectWithVoteStats):
             mp3_file = MP3(filename, translate=False)
             song.replaygain = cls.get_replaygain(mp3_file)
 
-        song.save()
-
-        song.songonstation_set.filter(station__in=stations).update(enabled=True)
-        song.songonstation_set.exclude(station__in=stations).update(enabled=False)
-
-        # Associate these after saving
         song.album = Album.objects.get_or_create(
             name__iexact=album_tag, defaults={"name": album_tag}
         )[0]
+
+        song.save()
+
+        # Associate these after saving
+
+        song.songonstation_set.objects_with_disabled.filter(
+            station__in=stations
+        ).update(enabled=True)
+        song.songonstation_set.exclude(station__in=stations).update(enabled=False)
+
         song.album.determine_enabled()
 
         song_to_artists = set()
@@ -204,7 +229,9 @@ class Song(ObjectWithCooldown, ObjectWithVoteStats):
                 name__iexact=artist_tag, defaults={"name": artist_tag}
             )[0]
             song_to_artist = SongToArtist.objects.update_or_create(
-                artist=artist, defaults={"artist": artist, "position": index}
+                song=song,
+                artist=artist,
+                defaults={"song": song, "artist": artist, "position": index},
             )[0]
             song_to_artists.add(song_to_artist)
         song.songtoartist_set.set(song_to_artists)
@@ -221,7 +248,9 @@ class Song(ObjectWithCooldown, ObjectWithVoteStats):
             groups_to_check.add(group)
             song_to_groups.add(
                 SongToGroup.objects.update_or_create(
-                    group=group, defaults={"group": group, "is_tag": True}
+                    song=song,
+                    group=group,
+                    defaults={"song": song, "group": group, "is_tag": True},
                 )[0]
             )
         for song_to_group in song.songtogroup_set.filter(is_tag=False):
@@ -232,6 +261,18 @@ class Song(ObjectWithCooldown, ObjectWithVoteStats):
 
         song.artist_json = [stg.to_json() for stg in song_to_artists]
         song.save()
+
+        return song
+
+    def disable(self):
+        self.enabled = False
+        self.save()
+        for song_on_station in self.songonstation_set.iterator():
+            song_on_station.enabled = False
+            song_on_station.save()
+        self.album.determine_enabled()
+        for group in self.group_set.iterator():
+            group.determine_enabled()
 
 
 class SongOnStationQuerySet(ObjectOnStationQuerySet, ObjectWithCooldownQuerySet):
@@ -244,7 +285,7 @@ class SongOnStationQuerySet(ObjectOnStationQuerySet, ObjectWithCooldownQuerySet)
             (
                 "SELECT "
                 f'  "{SongOnStation._meta.db_table}".song_id AS "__core_song_id", '
-                f'  "{SongOnStation._meta.db_table}".sid AS "__core_sid", '
+                f'  "{SongOnStation._meta.db_table}".station_id AS "__core_sid", '
                 f"   {extra_selects} "
             ),
             count=1,
@@ -299,7 +340,7 @@ class UnfilteredSongOnStationManager(ObjectWithCooldownManager):
 
 class SongOnStationManager(UnfilteredSongOnStationManager):
     def get_queryset(self):
-        return super().get_queryset().filter(exists=True, song__enabled=True)
+        return super().get_queryset().filter(enabled=True, song__enabled=True)
 
 
 class SongOnStation(ObjectOnStation, ObjectWithCooldown):
