@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 
-from config.models import Station, Relay, MusicDirectory
+from config.models import Station, Relay, MusicDirectory, MusicDirectoryToStation, Site
 
 from utils.superuser_required_admin import (
     StaffReadOnlyMixin,
@@ -22,6 +22,16 @@ class RelayAdmin(admin.ModelAdmin, SuperuserRequiredAdminMixin):
     pass
 
 
+class StationInline(admin.TabularInline):
+    model = MusicDirectoryToStation
+    extra = 0
+
+
 @admin.register(MusicDirectory)
 class MusicDirectoryAdmin(admin.ModelAdmin, StaffReadOnlyMixin):
+    inlines = (StationInline,)
+
+
+@admin.register(Site)
+class SiteAdmin(admin.ModelAdmin, StaffReadOnlyMixin):
     pass

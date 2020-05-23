@@ -31,6 +31,7 @@ class ObjectWithCooldown(models.Model):
     played_last = models.DateTimeField(auto_now_add=True)
     is_on_request_only = models.BooleanField(default=False, db_index=True)
     request_only_end = models.DateTimeField(auto_now_add=True)
+    permanently_request_only = models.BooleanField(default=False, db_index=True)
     last_seen = models.DateTimeField(blank=True, null=True)
     last_played = models.DateTimeField(blank=True, null=True)
 

@@ -20,3 +20,6 @@ disable=
 
 [TYPECHECK]
 ignored-modules=pyinotify,zmq
+
+[LOGGING]
+logging-format-style=fstr

@@ -1,11 +1,32 @@
 import os
+from datetime import timedelta
 
 from django.db import models
-from datetime import timedelta
 
 
 def default_history_trim():
     return timedelta(weeks=4)
+
+
+class Site(models.Model):
+    name = models.CharField(max_length=256)
+    hostname = models.CharField(
+        max_length=1024,
+        help_text=(
+            "Domain/subdomain for this station.  Useful if you have more than 1 station."
+            "If you only have 1 station, set this to your primary domain name."
+        ),
+    )
+    default_station = models.ForeignKey(
+        "config.Station",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+    )
+
+    def __str__(self):
+        return self.name
 
 
 class StationQuerySet(models.QuerySet):
@@ -14,9 +35,11 @@ class StationQuerySet(models.QuerySet):
 
 
 class Station(models.Model):
+    site = models.ForeignKey(Site, on_delete=models.DO_NOTHING)
     objects = models.Manager.from_queryset(StationQuerySet)
 
     name = models.CharField(max_length=64)
+    subdirectory = models.CharField(max_length=256, null=True, blank=True)
     is_default = models.BooleanField(
         default=False,
         help_text="If true, this is the station that shows up for people first visiting your site.",
@@ -24,13 +47,6 @@ class Station(models.Model):
     position = models.SmallIntegerField(
         default=0,
         help_text="What position in the menu this station sits at in the station menu.",
-    )
-    hostname = models.CharField(
-        max_length=1024,
-        help_text=(
-            "Domain/subdomain for this station.  Useful if you have more than 1 station."
-            "If you only have 1 station, set this to your primary domain name."
-        ),
     )
     primary_relay_hostname = models.CharField(
         max_length=1024,
@@ -145,12 +161,17 @@ class Relay(models.Model):
         return self.hostname
 
 
+class MusicDirectoryToStation(models.Model):
+    station = models.ForeignKey(Station, on_delete=models.CASCADE)
+    music_directory = models.ForeignKey("MusicDirectory", on_delete=models.CASCADE)
+
+
 class MusicDirectory(models.Model):
     path = models.CharField(max_length=1024)
     primary_station = models.OneToOneField(
         Station, on_delete=models.CASCADE, related_name="primary_directory"
     )
-    stations = models.ManyToManyField(Station)
+    stations = models.ManyToManyField(Station, through=MusicDirectoryToStation)
 
     def __str__(self):
         return self.path

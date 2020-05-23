@@ -26,8 +26,21 @@ class Album(models.Model):
         return self.name
 
     def determine_enabled(self):
+        should_exist_on = set(
+            self.song_set.filter(songonstation__station_id__isnull=False).values_list(
+                "songonstation__station_id", flat=True
+            )
+        )
+        existing_station_ids = set()
         for album_on_station in self.albumonstation_set.all():
             album_on_station.determine_enabled()
+            existing_station_ids.add(album_on_station.station_id)
+        for station in Station.objects.exclude(pk__in=existing_station_ids).filter(
+            pk__in=should_exist_on
+        ):
+            AlbumOnStation.objects.create(
+                album=self, station=station,
+            )
 
 
 class UserAlbumFave(models.Model):
@@ -105,7 +118,7 @@ class AlbumOnStation(GroupOnStationWithCooldown, GroupBlocksElections):
     newest_song_added_on = models.DateTimeField(auto_now_add=True)
 
     objects = AlbumOnStationManager.from_queryset(AlbumOnStationQuerySet)()
-    objects_with_deleted = UnfilteredAlbumOnStationManager.from_queryset(
+    objects_with_disabled = UnfilteredAlbumOnStationManager.from_queryset(
         AlbumOnStationQuerySet
     )()
 
@@ -116,12 +129,8 @@ class AlbumOnStation(GroupOnStationWithCooldown, GroupBlocksElections):
     def get_art_url(self):
         pass
 
-    @property
-    def songs(self):
-        return self.album.song_set.filter(station=self.station)
-
     def determine_enabled(self):
-        enabled = self.songs.exists()
+        enabled = self.songonstation_set.exists()
         if enabled != self.enabled:
             self.enabled = enabled
             self.save()

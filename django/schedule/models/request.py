@@ -72,6 +72,7 @@ class FulfilledRequest(models.Model):
     fulfilled_at = models.DateTimeField(auto_now_add=True)
     wait_time_for_fulfillment = models.IntegerField()
     line_size_at_fulfillment = models.IntegerField()
+    won_election = models.BooleanField()
 
     class Meta:
         ordering = ["id"]

@@ -24,6 +24,7 @@ pylint-django = "*"
 ipython = "*"
 django-extensions = "*"
 django = "==3.0.2"
+django-debug-toolbar = "*"
 
 [dev-packages]
 

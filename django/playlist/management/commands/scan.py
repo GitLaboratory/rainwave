@@ -1,64 +1,48 @@
-import os
-import mimetypes
-import mutagen
-
-from django.core.management.base import BaseCommand
-
-from playlist.models import Song, ScanError
-from playlist.exceptions import ScanMetadataException
+from playlist.models import ScanError, Song
 from config.models import MusicDirectory
 
-mimetypes.init()
-
-SKIPPABLE_EXCEPTIONS = (ScanMetadataException, mutagen.mp3.HeaderNotFoundError)
+from ._base_scan import ScannerCommand, ScannerMixin
 
 
-class Command(BaseCommand):
+class Command(ScannerCommand, ScannerMixin):
     help = "Performs a one-time scan of all directories."
+    scan_art_immediately = False
+    song_count = 0
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--full",
+            action="store_true",
+            help="Resets the playlist so that all files get re-scanned fresh.",
+        )
 
     def handle(self, *args, **options):
-        for directory in (
+        if options.get("full"):
+            Song.objects.all().update(file_mtime=0)
+
+        for music_directory in (
             MusicDirectory.objects.select_related("primary_station").all().iterator()
         ):
-            known_songs = Song.objects.filter(filename__startswith=directory.path)
-            known_songs.update(scanned=False)
-
-            errors_encountered = 0
-            song_number = 0
-            for root, _subdirs, files in os.walk(directory.path, followlinks=True):
-                for filename in files:
-                    filetypes = mimetypes.guess_type(filename)
-                    if any(
-                        filetype in ("audio/x-mpg", "audio/mpeg")
-                        for filetype in filetypes
-                    ):
-                        full_filename = os.path.join(root, filename)
-                        try:
-                            song_number += 1
-                            print(f"{directory.path} song {song_number}", end="\r")
-                            Song.scan(
-                                filename=full_filename,
-                                origin_station=directory.primary_station,
-                                stations=directory.stations.all(),
-                            )
-                        except SKIPPABLE_EXCEPTIONS as e:
-                            ScanError.objects.create(
-                                filename=full_filename, error=str(e),
-                            )
-                            errors_encountered += 1
-                        except ValueError as e:
-                            if "0x00" in str(e):
-                                ScanError.objects.create(
-                                    filename=full_filename, error=str(e)
-                                )
-                                errors_encountered += 1
-                            else:
-                                raise
-
-            print(f"{directory.path} cleaning up...")
-            for song in known_songs.filter(scanned=False).iterator():
-                song.disable()
+            self.scan_directory(
+                music_directory.path,
+                music_directory.primary_station,
+                list(music_directory.stations.all()),
+            )
 
         ScanError.trim()
 
-        print(f"Done.  {errors_encountered} errors encountered.")
+        self.flush_art_queue()
+
+        print()
+        print(f"Done.")
+        print()
+
+    def scan_song(self, filename, primary_station, stations):
+        super().scan_song(filename, primary_station, stations)
+        self.song_count += 1
+        print(f"{primary_station.name} - {self.song_count}", end="\r")
+
+    def flush_art_queue(self):
+        for index, filename in enumerate(self.album_art_queue):
+            print(f"Scanning album art - {index}", end="\r")
+            self._scan_image(filename)

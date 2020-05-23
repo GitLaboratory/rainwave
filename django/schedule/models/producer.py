@@ -12,13 +12,13 @@ class Producer(models.Model):
     url = models.CharField(max_length=2048, blank=True, null=True)
     use_crossfade = models.BooleanField(default=True)
 
-    dj = models.ForeignKey(
-        get_user_model(),
-        models.SET_NULL,
-        blank=True,
-        null=True,
-        related_name="dj_event_set",
-    )
+    # dj = models.ForeignKey(
+    #     get_user_model(),
+    #     models.SET_NULL,
+    #     blank=True,
+    #     null=True,
+    #     related_name="dj_event_set",
+    # )
     creator = models.ForeignKey(
         get_user_model(),
         on_delete=models.SET_NULL,

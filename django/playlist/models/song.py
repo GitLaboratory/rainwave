@@ -84,7 +84,7 @@ class SongManager(models.Manager):
         return super().get_queryset().filter(enabled=True)
 
 
-class Song(ObjectWithCooldown, ObjectWithVoteStats):
+class Song(ObjectWithVoteStats):
     objects = SongManager.from_queryset(models.QuerySet)()
     objects_with_disabled = models.Manager.from_queryset(models.QuerySet)()
 
@@ -105,7 +105,7 @@ class Song(ObjectWithCooldown, ObjectWithVoteStats):
     rating = models.FloatField(blank=True, null=True, db_index=True)
     rating_count = models.IntegerField(default=0, db_index=True)
     request_count = models.IntegerField(default=0)
-    request_only = models.BooleanField(default=False, db_index=False)
+    permanently_request_only = models.BooleanField(default=False, db_index=False)
     scanned = models.BooleanField(default=False)
 
     # ID3 Tags / Song Data
@@ -194,6 +194,11 @@ class Song(ObjectWithCooldown, ObjectWithVoteStats):
         song.length = int(mp3_file.info.length)
 
         if not song.replaygain and settings.RW_SCANNER_MP3GAIN:
+            if not _mp3gain_path:
+                raise RuntimeError(
+                    "Replaygain scanning is enabled but mp3gain is not on the PATH.  Install mp3gain."
+                )
+
             _gain_std, gain_error = subprocess.Popen(
                 [_mp3gain_path, "-o", "-q", "-s", "i", "-p", "-k", "-T", filename],
                 stdout=subprocess.PIPE,
@@ -215,25 +220,38 @@ class Song(ObjectWithCooldown, ObjectWithVoteStats):
 
         # Associate these after saving
 
-        song.songonstation_set.objects_with_disabled.filter(
-            station__in=stations
-        ).update(enabled=True)
-        song.songonstation_set.exclude(station__in=stations).update(enabled=False)
+        for station in stations:
+            SongOnStation.objects_with_disabled.update_or_create(
+                song=song,
+                station=station,
+                defaults={
+                    "song": song,
+                    "station": station,
+                    "enabled": True,
+                    "album_on_station": AlbumOnStation.objects_with_disabled.get_or_create(
+                        album=song.album, station=station,
+                    )[
+                        0
+                    ],
+                },
+            )
+        song.songonstation_set.exclude(station__in=list(stations)).update(enabled=False)
 
         song.album.determine_enabled()
 
         song_to_artists = set()
-        for index, artist_tag in enumerate(artists_tag):
+        for index, artist_tag in enumerate(artists_tag.split(",")):
             artist_tag = artist_tag.strip()
-            artist = Artist.objects.get_or_create(
-                name__iexact=artist_tag, defaults={"name": artist_tag}
-            )[0]
-            song_to_artist = SongToArtist.objects.update_or_create(
-                song=song,
-                artist=artist,
-                defaults={"song": song, "artist": artist, "position": index},
-            )[0]
-            song_to_artists.add(song_to_artist)
+            if artist_tag:
+                artist = Artist.objects.get_or_create(
+                    name__iexact=artist_tag, defaults={"name": artist_tag}
+                )[0]
+                song_to_artist = SongToArtist.objects.update_or_create(
+                    song=song,
+                    artist=artist,
+                    defaults={"song": song, "artist": artist, "position": index},
+                )[0]
+                song_to_artists.add(song_to_artist)
         song.songtoartist_set.set(song_to_artists)
 
         song_to_groups = set()
@@ -242,17 +260,18 @@ class Song(ObjectWithCooldown, ObjectWithVoteStats):
         )
         for genre_tag in cls.parse_tag(filename, mp3_file, "TCON").split(","):
             genre_tag = genre_tag.strip()
-            group = Group.objects.get_or_create(
-                name__iexact=genre_tag, defaults={"name": genre_tag}
-            )[0]
-            groups_to_check.add(group)
-            song_to_groups.add(
-                SongToGroup.objects.update_or_create(
-                    song=song,
-                    group=group,
-                    defaults={"song": song, "group": group, "is_tag": True},
+            if genre_tag:
+                group = Group.objects.get_or_create(
+                    name__iexact=genre_tag, defaults={"name": genre_tag}
                 )[0]
-            )
+                groups_to_check.add(group)
+                song_to_groups.add(
+                    SongToGroup.objects.update_or_create(
+                        song=song,
+                        group=group,
+                        defaults={"song": song, "group": group, "is_tag": True},
+                    )[0]
+                )
         for song_to_group in song.songtogroup_set.filter(is_tag=False):
             song_to_groups.add(song_to_group)
         song.songtogroup_set.set(song_to_groups)
@@ -345,11 +364,12 @@ class SongOnStationManager(UnfilteredSongOnStationManager):
 
 class SongOnStation(ObjectOnStation, ObjectWithCooldown):
     objects = SongOnStationManager.from_queryset(SongOnStationQuerySet)()
-    objects_with_deleted = UnfilteredSongOnStationManager.from_queryset(
+    objects_with_disabled = UnfilteredSongOnStationManager.from_queryset(
         SongOnStationQuerySet
     )()
 
     song = models.ForeignKey(Song, on_delete=models.CASCADE)
+    album_on_station = models.ForeignKey(AlbumOnStation, on_delete=models.CASCADE)
     electable = models.BooleanField(default=True, db_index=True)
     electable_blocked_by = models.CharField(max_length=64, blank=True, null=True)
     electable_blocked_for = models.SmallIntegerField(default=0)
