@@ -11,6 +11,6 @@
   "python.linting.pylintEnabled": true,
   "python.linting.enabled": true,
   "python.venvPath": "~/.local/share/virtualenvs",
-  "python.formatting.blackArgs": ["-t py38"],
+  "python.formatting.blackArgs": ["-t py37"],
   "files.insertFinalNewline": true
 }

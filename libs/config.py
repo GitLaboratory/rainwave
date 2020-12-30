@@ -2,8 +2,9 @@ try:
     import ujson as json
 except ImportError:
     import json
-import os
+
 import getpass
+import os
 import tempfile
 
 # Options hash - please don't access this externally in case the storage method changes
@@ -83,10 +84,10 @@ def load(filename=None, testmode=False):
     set_station_ids(get("song_dirs"), get("station_id_friendly"))
 
     public_relays = {}
-    relay_hostnames = []
+    relay_hostnames = set()
     for sid in station_ids:
         public_relays[sid] = []
-        relay_hostnames.append(
+        relay_hostnames.add(
             get("round_robin_relay_protocol") + get("round_robin_relay_host")
         )
         for relay_name, relay in get("relays").items():
@@ -100,13 +101,11 @@ def load(filename=None, testmode=False):
                     }
                 )
                 relay_hostname = relay["protocol"] + relay["hostname"]
-                if not relay_hostname in relay_hostnames:
-                    relay_hostnames.append(relay_hostname)
+                relay_hostnames.add(relay_hostname)
                 relay_hostname_port = "{}{}:{}".format(
                     relay["protocol"], relay["hostname"], relay["port"]
                 )
-                if relay_hostname_port not in relay_hostnames:
-                    relay_hostnames.append(relay_hostname_port)
+                relay_hostnames.add(relay_hostname_port)
         public_relays_json[sid] = json.dumps(public_relays[sid])
         station_mount_filenames[sid] = get_station(sid, "stream_filename")
         stream_filename_to_sid[get_station(sid, "stream_filename")] = sid
@@ -116,7 +115,7 @@ def load(filename=None, testmode=False):
     relay_hosts = " ".join(relay_hostnames)
     csp_header = ";".join(
         [
-            f"default-src 'self' {hostname} *.{hostname} https://www.google.com https://calendar.google.com",
+            f"default-src 'self' {hostname} *.{hostname} https://www.google.com ",
             "object-src 'none'",
             f"media-src {relay_hosts}",
             f"font-src 'self' {hostname} data: https://fonts.googleapis.com https://fonts.gstatic.com/",
