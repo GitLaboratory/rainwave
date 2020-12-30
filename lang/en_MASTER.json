@@ -29,6 +29,8 @@
    "db_error_permanent"                              : "Server error - internal database is offline.",
    "websocket_throttle"                              : "Slow down!",
    "404"                                             : "Page not found.",
+   "oauth_failed"                                    : "Could not reach the authorizing server.",
+   "oauth_rejected"                                  : "Could not verify you.  Please try again.",
 
    "__comment__"                 : "API/Web errors - these are spit out by the API but will be shown on the website.",
 

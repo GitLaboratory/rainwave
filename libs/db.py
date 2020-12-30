@@ -1,13 +1,10 @@
-import psycopg2
-import psycopg2.extras
 import time
 
-from libs import config
-from libs import log
+import psycopg2
+import psycopg2.extras
 
-c = None
-connection = None
-connection_errors = (psycopg2.OperationalError, psycopg2.InterfaceError)
+from libs import config, log
+
 
 class DatabaseDisconnectedError(Exception):
     pass
@@ -123,6 +120,10 @@ class PostgresCursor(psycopg2.extras.RealDictCursor):
     def rollback(self):
         self.execute("ROLLBACK")
         self.in_tx = False
+
+c: PostgresCursor = None
+connection = None
+connection_errors = (psycopg2.OperationalError, psycopg2.InterfaceError)
 
 
 def connect(auto_retry=True, retry_only_this_time=False):
@@ -773,31 +774,27 @@ def _create_test_tables():
         " \
 		CREATE TABLE phpbb_users( \
 			user_id					SERIAL		PRIMARY KEY, \
-			group_id				INT			DEFAULT 1, \
 			username				TEXT 		DEFAULT 'Test', \
-			user_new_privmsg		INT			DEFAULT 0, \
 			user_avatar				TEXT		DEFAULT '', \
 			user_avatar_type		INT			DEFAULT 0, \
-			user_colour             TEXT        DEFAULT 'FFFFFF', \
-			user_rank               INT 	    DEFAULT 0, \
-			user_regdate            INT         DEFAULT 0 \
+			user_regdate            INT         DEFAULT 0, \
+            user_password           VARCHAR(255) DEFAULT '' \
 		)"
     )
 
+def _create_session_tables():
     c.update(
-        "CREATE TABLE phpbb_sessions("
-        "session_user_id		INT,"
-        "session_id				TEXT,"
-        "session_last_visit		INT,"
-        "session_page			TEXT)"
+        "CREATE TABLE r4_sessions("
+        "   session_id		     	TEXT        PRIMARY KEY,"
+        "   user_id                 INT"
+        ")"
     )
-
-    c.update("CREATE TABLE phpbb_session_keys(key_id TEXT, user_id INT)")
-
-    c.update("CREATE TABLE phpbb_ranks(rank_id SERIAL PRIMARY KEY, rank_title TEXT)")
-
+    c.create_delete_fk("r4_sessions", "phpbb_users", "user_id")
 
 def add_custom_fields():
+    c.update("ALTER TABLE phpbb_users ADD discord_user_id       TEXT")
+    c.update("ALTER TABLE phpbb_users ADD user_donor            BOOLEAN     DEFAULT FALSE")
+    c.update("ALTER TABLE phpbb_users ADD radio_username		TEXT 		DEFAULT ''")
     c.update("ALTER TABLE phpbb_users ADD radio_totalvotes		INTEGER		DEFAULT 0")
     c.update("ALTER TABLE phpbb_users ADD radio_totalmindchange	INTEGER		DEFAULT 0")
     c.update("ALTER TABLE phpbb_users ADD radio_totalratings	INTEGER		DEFAULT 0")

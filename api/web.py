@@ -1,6 +1,6 @@
-from http import cookies
-import traceback
 import hashlib
+import traceback
+from http import cookies
 from time import time as timestamp
 
 try:
@@ -8,19 +8,15 @@ try:
 except ImportError:
     import json
 
-import tornado.web
 import tornado.httputil
-
-from rainwave.user import User
+import tornado.web
+from api_requests.auth.errors import OAuthNetworkError, OAuthRejectedError
+from libs import cache, config, db, log
 from rainwave.playlist_objects.song import SongNonExistent
+from rainwave.user import User
 
-from api import fieldtypes
-from api import locale
+from api import fieldtypes, locale
 from api.exceptions import APIException
-from libs import config
-from libs import log
-from libs import db
-from libs import cache
 
 # Add support for the SameSite attribute (obsolete when PY37 is unsupported).
 cookies.Morsel._reserved.setdefault('samesite', 'SameSite')
@@ -541,6 +537,24 @@ class APIHandler(RainwaveHandler):
                             "text": self.locale.translate("db_error_permanent"),
                         },
                     )
+            elif isinstance(exc, OAuthNetworkError):
+                self.append(
+                    "error",
+                    {
+                        "code": 500,
+                        "tl_key": "oauth_failed",
+                        "text": self.locale.translate("oauth_failed"),
+                    }
+                )
+            elif isinstance(exc, OAuthRejectedError):
+                self.append(
+                    "error",
+                    {
+                        "code": 403,
+                        "tl_key": "oauth_rejected",
+                        "text": self.locale.translate("oauth_rejected"),
+                    }
+                )
             elif isinstance(exc, APIException):
                 exc.localize(self.locale)
                 self.append(self.return_name, exc.jsonable())
