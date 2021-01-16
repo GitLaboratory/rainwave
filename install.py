@@ -57,11 +57,11 @@ if __name__ == "__main__":
     for file_to_copy in copy_files:
         copy_file(file_to_copy, path.join(install_dir, file_to_copy))
     
-    for service in services:
-        service_file = f"{service}.service"
-        copy_file(path.join("systemd", service_file), path.join(root, "etc", "systemd", "system", service_file))
+    # for service in services:
+    #     service_file = f"{service}.service"
+    #     copy_file(path.join("systemd", service_file), path.join(root, "etc", "systemd", "system", service_file))
 
-    subprocess.call(["sudo", "systemctl", "daemon-reload"])
+    # subprocess.call(["sudo", "systemctl", "daemon-reload"])
  
     subprocess.call(["chown", "-R", "%s:%s" % (user, group), install_dir])
 

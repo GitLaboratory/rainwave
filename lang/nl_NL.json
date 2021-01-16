@@ -155,8 +155,6 @@
        "__comment__"                                    : "The above 'Vote' is a verb, not a noun.",
    "voted"                                           : "Gestemd",
 
-   "event_naming__oneup"                             : "%(name) Kracht Uur",
-
    "__comment__"                 : "Tip Jar",
 
    "Patreon"                                         : "Patreon",

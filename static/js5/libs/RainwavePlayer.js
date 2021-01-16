@@ -84,7 +84,7 @@ var RainwavePlayer = (function () {
         if (isMobile) {
             // avoid using Vorbis on mobile devices, since MP3 playback has hardware decoding
         } else {
-            canVorbis = audioEl.canPlayType('audio/ogg; codecs="vorbis"');
+            canVorbis = audioEl.canPlayType('audio/ogg; codecs="opus"');
         }
 
         // https://bugzilla.mozilla.org/show_bug.cgi?id=1417300
