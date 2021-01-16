@@ -131,6 +131,8 @@
    "github_repo"                                     : "GitHub",
    "twitter"                                         : "Twitter",
 
+   "twitch_for_streamers"                            : "Twitch Widget",
+
    "__comment__"                 : "Timeline Headers",
 
    "coming_up"                                       : "Coming Up",
@@ -156,8 +158,6 @@
    "vote"                                            : "Vote",
       "__comment__"                                    : "The above 'Vote' is a verb, not a noun.",
    "voted"                                           : "Voted",
-
-   "event_naming__oneup"                             : "%(name) Power Hour",
 
    "__comment__"                 : "Tip Jar",
 

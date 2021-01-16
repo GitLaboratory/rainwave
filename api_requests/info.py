@@ -1,13 +1,12 @@
-from api.web import APIHandler
-from api.exceptions import APIException
 from api import fieldtypes
+from api.exceptions import APIException
 from api.urls import handle_api_url
-import api_requests.vote
+from api.web import APIHandler
+from libs import cache, config
+
 import api_requests.playlist
 import api_requests.tune_in
-
-from libs import cache
-from libs import config
+import api_requests.vote
 
 
 def attach_dj_info_to_request(request):
@@ -173,7 +172,7 @@ def check_sync_status(sid, offline_ack=False):
 @handle_api_url("info")
 class InfoRequest(APIHandler):
     auth_required = False
-    description = "Returns current user and station information.  all_albums will append a list of all albums to the request (will slow down your request).  current_listeners will add a list of all current listeners to your request.  Setting 'status' to true will have the response change if the station is currently being DJed. (not recommended to set this to true)"
+    description = "Returns current user and station information, including current song, listeners, request queue, etc.  all_albums will append a list of all albums to the request (will slow down your request).  current_listeners will add a list of all current listeners to your request.  Setting 'status' to true will have the response change if the station is currently being DJed. (not recommended to set this to true)"
     fields = {
         "all_albums": (fieldtypes.boolean, False),
         "current_listeners": (fieldtypes.boolean, False),
@@ -202,7 +201,7 @@ class InfoAllRequest(APIHandler):
 
 @handle_api_url("stations")
 class StationsRequest(APIHandler):
-    description = "Get information about all available stations."
+    description = "Get IDs, names, descriptions, and stream URLs of all stations."
     auth_required = False
     return_name = "stations"
     sid_required = False
@@ -219,7 +218,9 @@ class StationsRequest(APIHandler):
                     "description": self.locale.translate(
                         "station_description_id_%s" % station_id
                     ),
-                    "stream": api_requests.tune_in.get_round_robin_url(station_id, user=self.user),
+                    "stream": api_requests.tune_in.get_round_robin_url(
+                        station_id, user=self.user
+                    ),
                     "relays": config.public_relays[self.sid],
                 }
             )

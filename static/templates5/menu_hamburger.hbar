@@ -4,6 +4,11 @@
 			Discord
 		</a>
 	</div>
+	<div class="menu_group">
+		<a href="/twitch" target="_blank">
+			{{ $l("twitch_for_streamers") }}
+		</a>
+	</div>
 	<div class="pconly menu_group">
 		<a href="/pages/playback_history" target="_blank">
 			{{ $l("playback_history_link") }}

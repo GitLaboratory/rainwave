@@ -141,8 +141,6 @@
       "__comment__"                                    : "The above 'Vote' is a verb, not a noun.",
    "voted"                                           : "Проголосовано",
 
-   "event_naming__oneup"                             : "Ударный час %(name)",
-
    "__comment__"                 : "Tip Jar",
 
    "Patreon"                                         : "Patreon",
