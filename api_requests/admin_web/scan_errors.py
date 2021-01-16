@@ -1,10 +1,10 @@
-from time import time as timestamp
 import datetime
-from libs import db
+from time import time as timestamp
+
 import api.web
 from api.urls import handle_url
-
 from api_requests.admin.scan_errors import BackendScanErrors
+from libs import db
 
 
 def relative_time(epoch_time):
@@ -22,7 +22,7 @@ def relative_time(epoch_time):
 
 @handle_url("/admin/album_list/scan_results")
 class ScanResults(api.web.PrettyPrintAPIMixin, BackendScanErrors):
-    dj_preparation = True
+    admin_required = True
 
     def get(self):  # pylint: disable=E0202
         new_results = []
@@ -43,7 +43,7 @@ class ScanResults(api.web.PrettyPrintAPIMixin, BackendScanErrors):
 
 @handle_url("/admin/tools/scan_results")
 class LatestSongs(api.web.HTMLRequest):
-    dj_preparation = True
+    admin_preparation = True
 
     def get(self):
         self.write(self.render_string("basic_header.html", title="Latest Songs"))

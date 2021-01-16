@@ -1,9 +1,10 @@
 from time import time as timestamp
-from libs import db
+
 import api.web
-from api.urls import handle_api_url
-from api.exceptions import APIException
 from api import fieldtypes
+from api.exceptions import APIException
+from api.urls import handle_api_url
+from libs import db
 from rainwave.events import event
 from rainwave.events.event import BaseProducer
 
@@ -19,7 +20,7 @@ class ListProducers(api.web.APIHandler):
             self.return_name,
             db.c.fetch_all(
                 "SELECT sched_type as type, sched_id AS id, sched_name AS name, sched_start AS start, sched_end AS end, sched_url AS url, sid, ROUND((sched_end - sched_start) / 60) AS sched_length_minutes, username "
-                "FROM r4_schedule LEFT JOIN phpbb_users ON (sched_dj_user_id = user_id) "
+                "FROM r4_schedule"
                 "WHERE sched_used = FALSE AND sid = %s AND sched_start >= %s ORDER BY sched_start",
                 (self.sid, timestamp()),
             ),
@@ -29,7 +30,7 @@ class ListProducers(api.web.APIHandler):
             self.return_name + "_past",
             db.c.fetch_all(
                 "SELECT sched_type as type, sched_id AS id, sched_name AS name, sched_start AS start, sched_end AS end, sched_url AS url, sid, ROUND((sched_end - sched_start) / 60) AS sched_length_minutes, username "
-                "FROM r4_schedule LEFT JOIN phpbb_users ON (sched_dj_user_id = user_id) "
+                "FROM r4_schedule"
                 "WHERE sched_type != 'PVPElectionProducer' AND sid = %s AND sched_start > %s AND sched_start < %s ORDER BY sched_start DESC",
                 (self.sid, timestamp() - (86400 * 60), timestamp()),
             ),
@@ -47,7 +48,7 @@ class ListProducersAll(api.web.APIHandler):
             self.return_name,
             db.c.fetch_all(
                 "SELECT sched_type as type, sched_id AS id, sched_name AS name, sched_start AS start, sched_end AS end, sched_url AS url, sid, ROUND((sched_end - sched_start) / 60) AS sched_length_minutes, username "
-                "FROM r4_schedule LEFT JOIN phpbb_users ON (sched_dj_user_id = user_id)  "
+                "FROM r4_schedule "
                 "WHERE sched_used = FALSE AND sched_start >= %s ORDER BY sched_start",
                 (timestamp(),),
             ),
@@ -57,7 +58,7 @@ class ListProducersAll(api.web.APIHandler):
             self.return_name + "_past",
             db.c.fetch_all(
                 "SELECT sched_type as type, sched_id AS id, sched_name AS name, sched_start AS start, sched_end AS end, sched_url AS url, sid, ROUND((sched_end - sched_start) / 60) AS sched_length_minutes, username "
-                "FROM r4_schedule LEFT JOIN phpbb_users ON (sched_dj_user_id = user_id)  "
+                "FROM r4_schedule  "
                 "WHERE sched_type != 'PVPElectionProducer' AND sched_start > %s AND sched_start < %s ORDER BY sched_start DESC",
                 (timestamp() - (86400 * 26), timestamp()),
             ),
@@ -85,7 +86,6 @@ class CreateProducer(api.web.APIHandler):
         "start_utc_time": (fieldtypes.positive_integer, True),
         "end_utc_time": (fieldtypes.positive_integer, True),
         "url": (fieldtypes.string, None),
-        "dj_user_id": (fieldtypes.user_id, None),
         "fill_unrated": (fieldtypes.boolean, False),
     }
 
@@ -96,7 +96,6 @@ class CreateProducer(api.web.APIHandler):
             end=self.get_argument("end_utc_time"),
             name=self.get_argument("name"),
             url=self.get_argument("url"),
-            dj_user_id=self.get_argument("dj_user_id"),
         )
         if self.get_argument("fill_unrated") and getattr(p, "fill_unrated", False):
             p.fill_unrated(

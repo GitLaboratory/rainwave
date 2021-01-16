@@ -1,20 +1,11 @@
 import psycopg2
-from time import time as timestamp
 import tornado.httpserver
 import tornado.ioloop
-import tornado.web
-import tornado.process
 import tornado.options
-
-from backend import sync_to_front
-from rainwave import schedule
-from rainwave import playlist
-from libs import log
-from libs import config
-from libs import db
-from libs import cache
-from libs import memory_trace
-from libs import zeromq
+import tornado.process
+import tornado.web
+from libs import cache, config, db, log, memory_trace, zeromq
+from rainwave import playlist, schedule
 
 
 class AdvanceScheduleRequest(tornado.web.RequestHandler):
@@ -29,20 +20,6 @@ class AdvanceScheduleRequest(tornado.web.RequestHandler):
             self.sid = int(sid)
         else:
             return
-
-        if cache.get_station(self.sid, "backend_paused"):
-            if not cache.get_station(self.sid, "dj_heartbeat_start"):
-                log.debug("dj", "Setting server start heatbeat.")
-                cache.set_station(self.sid, "dj_heartbeat_start", timestamp())
-            self.write(self._get_pause_file())
-            schedule.set_upnext_crossfade(self.sid, False)
-            cache.set_station(self.sid, "backend_paused_playing", True)
-            sync_to_front.sync_frontend_dj(self.sid)
-            return
-        else:
-            cache.set_station(self.sid, "dj_heartbeat_start", False)
-            cache.set_station(self.sid, "backend_paused", False)
-            cache.set_station(self.sid, "backend_paused_playing", False)
 
         try:
             schedule.advance_station(self.sid)
@@ -63,22 +40,6 @@ class AdvanceScheduleRequest(tornado.web.RequestHandler):
         self.success = True
         if not cache.get_station(self.sid, "get_next_socket_timeout"):
             self.write(to_send)
-
-    def _get_pause_file(self):
-        if not config.get("liquidsoap_annotations"):
-            log.debug(
-                "backend", "Station is paused, using: %s" % config.get("pause_file")
-            )
-            return config.get("pause_file")
-
-        string = 'annotate:crossfade="2",use_suffix="1",'
-        if cache.get_station(self.sid, "pause_title"):
-            string += 'title="%s"' % cache.get_station(self.sid, "pause_title")
-        else:
-            string += 'title="Intermission"'
-        string += ":" + config.get("pause_file")
-        log.debug("backend", "Station is paused, using: %s" % string)
-        return string
 
     def _get_annotated(self, e):
         string = 'annotate:crossfade="'
@@ -159,7 +120,6 @@ class BackendServer:
         # the cron jobs that run occasionally.
         import backend.api_key_pruning
         import backend.inactive
-        import backend.dj_heartbeat
 
         # pylint: enable=import-outside-toplevel,unused-import
 

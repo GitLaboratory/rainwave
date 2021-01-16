@@ -19,7 +19,6 @@ var Sizing = (function () {
     self.menu_height = 0;
     self.timeline_message_size = 45;
     self.list_height = 0;
-    self.dj_area = null;
     self.requests_areas = [];
 
     self.add_resize_callback = function (cb, priority) {
@@ -66,10 +65,6 @@ var Sizing = (function () {
         }
 
         index_t.search_results_container.style.height = self.list_height + "px";
-        if (self.dj_area) {
-            self.dj_area.style.height =
-                self.dj_area.sizeable_area_height + "px";
-        }
 
         for (i = 0; i < index_t.sizeable_area.childNodes.length; i++) {
             index_t.sizeable_area.childNodes[i].style.height =
@@ -89,9 +84,6 @@ var Sizing = (function () {
             index_t.requests_container.style.left = "100%";
             index_t.search_container.style.left = "100%";
             index_t.detail_container.style.left = "100%";
-            if (self.dj_area) {
-                self.dj_area.style.left = "100%";
-            }
 
             if (self.width < 600) {
                 document.body.classList.add("small");
@@ -109,9 +101,6 @@ var Sizing = (function () {
                 index_t.requests_container.style.left = null;
                 index_t.search_container.style.left = null;
                 index_t.detail_container.style.left = null;
-                if (self.dj_area) {
-                    self.dj_area.style.left = null;
-                }
                 if (self.width < 1366) {
                     document.body.classList.add("small");
                     document.body.classList.remove("normal");
@@ -140,15 +129,9 @@ var Sizing = (function () {
             index_t.requests_container.style.left = right_of_timeline + "px";
             index_t.search_container.style.left = right_of_timeline + "px";
             index_t.detail_container.style.left = right_of_timeline + "px";
-            if (self.dj_area) {
-                self.dj_area.style.left = right_of_timeline + "px";
-            }
         } else {
             index_t.requests_container.style.left = null;
             index_t.search_container.style.left = null;
-            if (self.dj_area) {
-                self.dj_area.style.left = null;
-            }
             index_t.timeline.style.width = pwr_timeline_width + "px";
             index_t.lists.style.left = pwr_timeline_width + "px";
             index_t.detail_container.style.left =

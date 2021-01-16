@@ -11,7 +11,7 @@ except ImportError:
 import tornado.httputil
 import tornado.web
 from api_requests.auth.errors import OAuthNetworkError, OAuthRejectedError
-from libs import cache, config, db, log
+from libs import config, db, log
 from rainwave.playlist_objects.song import SongNonExistent
 from rainwave.user import User
 
@@ -19,7 +19,7 @@ from api import fieldtypes, locale
 from api.exceptions import APIException
 
 # Add support for the SameSite attribute (obsolete when PY37 is unsupported).
-cookies.Morsel._reserved.setdefault('samesite', 'SameSite')
+cookies.Morsel._reserved.setdefault("samesite", "SameSite")
 
 # This is the Rainwave API main handling request class.  You'll inherit it in order to handle requests.
 # Does a lot of form checking and validation of user/etc.  There's a request class that requires no authentication at the bottom of this module.
@@ -110,10 +110,6 @@ class RainwaveHandler(tornado.web.RequestHandler):
     tunein_required = False
     # Validate user's logged in status first.
     login_required = False
-    # User must be a DJ for the next, current, or history[0] event
-    dj_required = False
-    # User must have an unused DJ-able event in the future
-    dj_preparation = False
     # Validate user is a station administrator.
     admin_required = False
     # Do we need a valid SID as part of the submitted form?
@@ -163,7 +159,9 @@ class RainwaveHandler(tornado.web.RequestHandler):
     def set_cookie(self, name, value, *args, **kwargs):
         if isinstance(value, int):
             value = repr(value)
-        super(RainwaveHandler, self).set_cookie(name, value, *args, secure=True, samesite="lax", **kwargs)
+        super(RainwaveHandler, self).set_cookie(
+            name, value, *args, secure=True, samesite="lax", **kwargs
+        )
 
     def get_argument(self, name, default=None, **kwargs):
         arg = default
@@ -218,7 +216,7 @@ class RainwaveHandler(tornado.web.RequestHandler):
             raise APIException("invalid_station_id", http_code=400)
 
     def permission_checks(self):
-        if (self.login_required or self.admin_required or self.dj_required) and (
+        if (self.login_required or self.admin_required) and (
             not self.user or self.user.is_anonymous()
         ):
             raise APIException("login_required", http_code=403)
@@ -242,26 +240,6 @@ class RainwaveHandler(tornado.web.RequestHandler):
                 lock_counter=self.user.data["lock_counter"],
                 http_code=403,
             )
-
-        is_dj = False
-        if self.dj_required and not self.user:
-            raise APIException("dj_required", http_code=403)
-        if self.dj_required and not self.user.is_admin():
-            potential_djs = cache.get_station(self.sid, "dj_user_ids")
-            if not potential_djs or not self.user.id in potential_djs:
-                raise APIException("dj_required", http_code=403)
-            is_dj = True
-            self.user.data["dj"] = True
-        elif self.dj_required and self.user.is_admin():
-            is_dj = True
-            self.user.data["dj"] = True
-
-        if self.dj_preparation and not is_dj and not self.user.is_admin():
-            if not db.c.fetch_var(
-                "SELECT COUNT(*) FROM r4_schedule WHERE sched_used = 0 AND sched_dj_user_id = %s",
-                (self.user.id,),
-            ):
-                raise APIException("dj_required", http_code=403)
 
     # Called by Tornado, allows us to setup our request as we wish. User handling, form validation, etc. take place here.
     def prepare(self):
@@ -359,7 +337,9 @@ class RainwaveHandler(tornado.web.RequestHandler):
                     "SELECT 1 FROM phpbb_sessions_keys WHERE key_id = %s AND user_id = %s",
                     (
                         hashlib.md5(
-                            bytes(str(self.get_cookie(phpbb_cookie_name + "k")), "utf-8")
+                            bytes(
+                                str(self.get_cookie(phpbb_cookie_name + "k")), "utf-8"
+                            )
                         ).hexdigest(),
                         user_id,
                     ),
@@ -544,7 +524,7 @@ class APIHandler(RainwaveHandler):
                         "code": 500,
                         "tl_key": "oauth_failed",
                         "text": self.locale.translate("oauth_failed"),
-                    }
+                    },
                 )
             elif isinstance(exc, OAuthRejectedError):
                 self.append(
@@ -553,7 +533,7 @@ class APIHandler(RainwaveHandler):
                         "code": 403,
                         "tl_key": "oauth_rejected",
                         "text": self.locale.translate("oauth_rejected"),
-                    }
+                    },
                 )
             elif isinstance(exc, APIException):
                 exc.localize(self.locale)

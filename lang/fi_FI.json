@@ -15,7 +15,6 @@
    "login_required"                                  : "Kirjautuminen vaaditaan.",
    "tunein_required"                                 : "Aseman kuuntelemista vaaditaan.",
    "admin_required"                                  : "Sinun täytyy olla ylläpitäjä.",
-   "dj_required"                                     : "Sinun täytyy olla DJ.",
    "perks_required"                                  : "Sinun täytyy olla lahjoittaja.",
    "unlocked_only"                                   : "Käyttäjä lukittu asemalle %(station) vielä %(lock_counter) kappaleen ajaksi.",
    "internal_error"                                  : "Sisäinen palvelinvirhe.",

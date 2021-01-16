@@ -1,20 +1,17 @@
 import os
-import tornado.web
 
-import api.web
 import api.locale
-from api.urls import handle_url, handle_api_url
-from api_requests import info
+import api.web
+import tornado.web
 from api.exceptions import APIException
-
-from libs import cache
-from libs import config
-from libs import buildtools
+from api.urls import handle_api_url, handle_url
+from libs import buildtools, cache, config
 from rainwave.user import User
 
+from api_requests import info
+
 STATION_REGEX = "|".join(
-    stream_filename for stream_filename
-    in config.stream_filename_to_sid.keys()
+    stream_filename for stream_filename in config.stream_filename_to_sid.keys()
 )
 
 
@@ -105,10 +102,7 @@ class MainIndex(api.web.HTMLRequest):
         self.user.ip_address = self.request.remote_ip
         self.user.ensure_api_key()
 
-        if (
-            self.beta
-            or config.get("developer_mode")
-        ):
+        if self.beta or config.get("developer_mode"):
             buildtools.bake_beta_css()
             buildtools.bake_beta_templates()
             self.jsfiles = []
@@ -146,13 +140,7 @@ class MainIndex(api.web.HTMLRequest):
             jsfiles=self.jsfiles,
             mobile=self.mobile,
             station_name=page_title,
-            dj=self.user.is_dj(),
         )
-
-
-@handle_url("/(?P<station>{})/dj".format(STATION_REGEX))
-class DJIndex(MainIndex):
-    dj_required = True
 
 
 @handle_url("/(?P<station>{})/beta".format(STATION_REGEX))
@@ -173,11 +161,6 @@ class BetaIndex(MainIndex):
         if not config.get("public_beta"):
             self.perks_required = True
         super(BetaIndex, self).prepare()
-
-
-@handle_url("/(?P<station>{})/beta/dj".format(STATION_REGEX))
-class DJBetaIndex(MainIndex):
-    dj_required = True
 
 
 @handle_api_url("bootstrap")
@@ -230,8 +213,3 @@ class Bootstrap(api.web.APIHandler):
             self.append("mobile", True)
         else:
             self.append("mobile", False)
-
-
-@handle_api_url("bootstrap_dj")
-class DJBootstrap(Bootstrap):
-    dj_required = True

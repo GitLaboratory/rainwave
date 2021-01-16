@@ -1,18 +1,14 @@
-from time import time as timestamp
-import re
 import random
+import re
 import string
 import unicodedata
+from time import time as timestamp
 from urllib import parse
 
-from libs import log
-from libs import cache
-from libs import db
-from libs import config
+from api.exceptions import APIException
+from libs import cache, config, db, log
 
 from rainwave import playlist
-
-from api.exceptions import APIException
 
 _AVATAR_PATH = "/forums/download/file.php?avatar=%s"
 _DEFAULT_AVATAR = "/static/images4/user.svg"
@@ -144,7 +140,7 @@ class User:
     def _auth_anon_user(self, api_key, bypass=False):
         if not bypass:
             cache_key = unicodedata.normalize(
-                "NFKD", u"api_key_listen_key_%s" % api_key
+                "NFKD", "api_key_listen_key_%s" % api_key
             ).encode("ascii", "ignore")
             listen_key = cache.get(cache_key)
             if not listen_key:
@@ -233,11 +229,6 @@ class User:
 
     def is_admin(self):
         return self.data["admin"] > 0
-
-    def is_dj(self):
-        if "dj" in self.data and self.data["dj"]:
-            return True
-        return False
 
     def has_perks(self):
         return self.data["perks"]
@@ -549,7 +540,7 @@ class User:
                 int(timestamp()) + 172800, self.data.get("api_key")
             )
             cache_key = unicodedata.normalize(
-                "NFKD", u"api_key_listen_key_%s" % api_key
+                "NFKD", "api_key_listen_key_%s" % api_key
             ).encode("ascii", "ignore")
             cache.set_global(cache_key, self.data["listen_key"])
         elif self.id > 1:

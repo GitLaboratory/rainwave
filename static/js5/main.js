@@ -107,11 +107,6 @@ var RWAudio;
         template = RWTemplates.index({ stations: Stations });
         User = BOOTSTRAP.user;
         API.add_callback("user", function (json) {
-            if (json.dj) {
-                document.body.classList.add("is_dj");
-            } else {
-                document.body.classList.remove("is_dj");
-            }
             User = json;
         });
 

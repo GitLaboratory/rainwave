@@ -1,16 +1,12 @@
-import random
 import math
+import random
 from time import time as timestamp
 
-from libs import db
-from libs import config
-from libs import cache
-from libs import log
-from rainwave import playlist
-from rainwave import request
-from rainwave.user import User
+from libs import cache, config, db, log
+from rainwave import playlist, request
 from rainwave.events import event
 from rainwave.playlist_objects.song import SongNonExistent
+from rainwave.user import User
 
 _request_interval = {}
 _request_sequence = {}
@@ -122,7 +118,6 @@ class ElectionProducer(event.BaseProducer):
                 return self.load_next_event()
             elec.name = self.name
             elec.url = self.url
-            elec.dj_user_id = self.dj_user_id
             return elec
         else:
             return self.load_next_event()
@@ -138,7 +133,6 @@ class ElectionProducer(event.BaseProducer):
             elec = self.elec_class.create(self.sid, self.id)
             elec.url = self.url
             elec.name = self.name
-            elec.dj_user_id = self.dj_user_id
             elec.fill(target_length, skip_requests)
             if elec.length() == 0:
                 raise Exception("Created zero-length election.")
@@ -155,7 +149,6 @@ class Election(event.BaseEvent):
     public = True
     timed = False
     sched_id = None
-    dj_user_id = None
 
     @classmethod
     def load_by_id(cls, elec_id):

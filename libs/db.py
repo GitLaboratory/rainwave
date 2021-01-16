@@ -9,6 +9,7 @@ from libs import config, log
 class DatabaseDisconnectedError(Exception):
     pass
 
+
 class PostgresCursor(psycopg2.extras.RealDictCursor):
     in_tx = False
     auto_retry = True
@@ -121,6 +122,7 @@ class PostgresCursor(psycopg2.extras.RealDictCursor):
         self.execute("ROLLBACK")
         self.in_tx = False
 
+
 c: PostgresCursor = None
 connection = None
 connection_errors = (psycopg2.OperationalError, psycopg2.InterfaceError)
@@ -153,8 +155,12 @@ def connect(auto_retry=True, retry_only_this_time=False):
     connected = False
     while not connected:
         try:
-            connection = psycopg2.connect(base_connstr + ("dbname=%s" % name), connect_timeout=1)
-            connection.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+            connection = psycopg2.connect(
+                base_connstr + ("dbname=%s" % name), connect_timeout=1
+            )
+            connection.set_isolation_level(
+                psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT
+            )
             connection.autocommit = True
             c = connection.cursor(cursor_factory=PostgresCursor)
             c.auto_retry = auto_retry
@@ -185,6 +191,7 @@ def close():
 
     return True
 
+
 def connection_keepalive():
     if c.disconnected:
         connect(auto_retry=False)
@@ -194,6 +201,7 @@ def connection_keepalive():
     except connection_errors:
         c.disconnected = True
         connect(auto_retry=False)
+
 
 def create_tables():
     trgrm_exists = c.fetch_var(
@@ -488,7 +496,6 @@ def create_tables():
 			sched_type				TEXT		, \
 			sched_name				TEXT		, \
 			sched_url				TEXT 		, \
-			sched_dj_user_id        INT         , \
 			sid						SMALLINT	NOT NULL, \
 			sched_public			BOOLEAN		DEFAULT TRUE, \
 			sched_timed				BOOLEAN		DEFAULT TRUE, \
@@ -503,13 +510,6 @@ def create_tables():
     c.create_idx("r4_schedule", "sched_in_progress")
     c.create_idx("r4_schedule", "sched_public")
     c.create_idx("r4_schedule", "sched_start_actual")
-    c.create_delete_fk(
-        "r4_schedule",
-        "phpbb_users",
-        "sched_dj_user_id",
-        foreign_key="user_id",
-        create_idx=False,
-    )
 
     c.update(
         " \
@@ -782,6 +782,7 @@ def _create_test_tables():
 		)"
     )
 
+
 def _create_session_tables():
     c.update(
         "CREATE TABLE r4_sessions("
@@ -791,9 +792,12 @@ def _create_session_tables():
     )
     c.create_delete_fk("r4_sessions", "phpbb_users", "user_id")
 
+
 def add_custom_fields():
     c.update("ALTER TABLE phpbb_users ADD discord_user_id       TEXT")
-    c.update("ALTER TABLE phpbb_users ADD user_donor            BOOLEAN     DEFAULT FALSE")
+    c.update(
+        "ALTER TABLE phpbb_users ADD user_donor            BOOLEAN     DEFAULT FALSE"
+    )
     c.update("ALTER TABLE phpbb_users ADD radio_username		TEXT 		DEFAULT ''")
     c.update("ALTER TABLE phpbb_users ADD radio_totalvotes		INTEGER		DEFAULT 0")
     c.update("ALTER TABLE phpbb_users ADD radio_totalmindchange	INTEGER		DEFAULT 0")

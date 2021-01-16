@@ -1,22 +1,11 @@
+import datetime
 import time
 from time import time as timestamp
-import datetime
+
 import requests
 import tornado.ioloop
-
 from backend import sync_to_front
-from rainwave import events
-from rainwave import playlist
-import rainwave.playlist_objects.album
-from rainwave import listeners
-from rainwave import request
-from rainwave import user
-from libs import db
-from libs import config
-from libs import cache
-from libs import log
-
-from rainwave.events import election
+from libs import cache, config, db, log
 
 # This is to make sure the code gets loaded and producers get registered
 import rainwave.events.oneup
@@ -24,6 +13,9 @@ import rainwave.events.pvpelection
 import rainwave.events.pvpelection_no_cooldown
 import rainwave.events.shortest_election
 import rainwave.events.singlesong
+import rainwave.playlist_objects.album
+from rainwave import events, listeners, playlist, request, user
+from rainwave.events import election
 
 # Events for each station
 current = {}
@@ -509,20 +501,6 @@ def update_memcache(sid):
         playlist.get_all_groups_for_power(sid, with_searchable=False),
         True,
     )
-
-    potential_dj_ids = []
-    if getattr(current[sid], "dj_user_id", None):
-        potential_dj_ids.append(current[sid].dj_user_id)
-    for evt in upnext[sid]:
-        if getattr(evt, "dj_user_id", None):
-            potential_dj_ids.append(evt.dj_user_id)
-    if (
-        history[sid]
-        and history[sid][-1]
-        and getattr(history[sid][-1], "dj_user_id", None)
-    ):
-        potential_dj_ids.append(history[sid][-1].dj_user_id)
-    cache.set_station(sid, "dj_user_ids", potential_dj_ids)
 
 
 def update_live_voting(sid):

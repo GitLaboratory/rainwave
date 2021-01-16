@@ -1,7 +1,6 @@
 from time import time as timestamp
 
-from libs import db
-from libs import log
+from libs import db, log
 
 all_producers = {}
 
@@ -59,7 +58,6 @@ class BaseProducer:
         p.use_crossfade = row["sched_use_crossfade"]
         p.use_tag_suffix = row["sched_use_tag_suffix"]
         p.url = row["sched_url"]
-        p.dj_user_id = row["sched_dj_user_id"]
         p.load()
         return p
 
@@ -75,7 +73,6 @@ class BaseProducer:
         url=None,
         use_crossfade=True,
         use_tag_suffix=True,
-        dj_user_id=None,
     ):
         evt = cls(sid)
         evt.id = db.c.get_next_id("r4_schedule", "sched_id")
@@ -88,11 +85,10 @@ class BaseProducer:
         evt.url = url
         evt.use_crossfade = use_crossfade
         evt.use_tag_suffix = use_tag_suffix
-        evt.dj_user_id = dj_user_id
         db.c.update(
             "INSERT INTO r4_schedule "
-            "(sched_id, sched_start, sched_end, sched_type, sched_name, sid, sched_public, sched_timed, sched_url, sched_use_crossfade, sched_use_tag_suffix, sched_dj_user_id) VALUES "
-            "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            "(sched_id, sched_start, sched_end, sched_type, sched_name, sid, sched_public, sched_timed, sched_url, sched_use_crossfade, sched_use_tag_suffix) VALUES "
+            "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
             (
                 evt.id,
                 evt.start,
@@ -105,7 +101,6 @@ class BaseProducer:
                 evt.url,
                 evt.use_crossfade,
                 evt.use_tag_suffix,
-                evt.dj_user_id,
             ),
         )
         return evt
@@ -128,7 +123,6 @@ class BaseProducer:
         self.use_tag_suffix = True
         self.plan_ahead_limit = 1
         self.songs = None
-        self.dj_user_id = None
 
     def duplicate(self):
         duped = self.__class__.create(
@@ -141,7 +135,6 @@ class BaseProducer:
             self.url,
             self.use_crossfade,
             self.use_tag_suffix,
-            self.dj_user_id,
         )
         ts = int(timestamp())
         if duped.start < ts:

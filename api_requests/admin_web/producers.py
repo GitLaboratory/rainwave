@@ -1,17 +1,17 @@
-from libs import config
 import api.web
 from api import fieldtypes
 from api.urls import handle_url
 from api_requests.admin import producers
-from rainwave.events import event
 from api_requests.admin_web import index
 from api_requests.admin_web.power_hours import get_ph_formatted_time
+from libs import config
 
 # this makes sure all the event modules get loaded correctly
 # and registered correctly with their parent class
 # it is critical to make sure this module works correctly
 # do not remove, that pylint ignore is there for a good reason
 from rainwave import schedule  # pylint: disable=W0611
+from rainwave.events import event
 
 
 @handle_url("/admin/tools/producers")
@@ -40,7 +40,6 @@ class WebCreateProducer(api.web.HTMLRequest):
         self.write("</select><br>")
         self.write("Name: <input id='new_ph_name' type='text' /><br>")
         self.write("URL: <input id='new_ph_url' type='text' /><br>")
-        self.write("DJ User ID: <input id='new_ph_user_id' type='text' /><br>")
         self.write(
             "<br>Input date and time in YOUR timezone.<br><u>Start Time</u>:<br> "
         )
@@ -51,7 +50,7 @@ class WebCreateProducer(api.web.HTMLRequest):
             "<br><br><button onclick=\"window.top.call_api('admin/create_producer', "
         )
         self.write(
-            "{ 'producer_type': document.getElementById('new_ph_type').value, 'end_utc_time': document.getElementById('new_ph_end_timestamp').value, 'start_utc_time': document.getElementById('new_ph_start_timestamp').value, 'name': document.getElementById('new_ph_name').value, 'url': document.getElementById('new_ph_url').value, 'dj_user_id': document.getElementById('new_ph_user_id').value });\""
+            "{ 'producer_type': document.getElementById('new_ph_type').value, 'end_utc_time': document.getElementById('new_ph_end_timestamp').value, 'start_utc_time': document.getElementById('new_ph_start_timestamp').value, 'name': document.getElementById('new_ph_name').value, 'url': document.getElementById('new_ph_url').value });\""
         )
         self.write(">Create new Producer</button></div>")
         self.write(self.render_string("basic_footer.html"))

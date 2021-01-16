@@ -12,7 +12,7 @@ var RainwaveAPI = (function() {
 	};
 
 	var _sid, _userID, _apiKey, _host;
-	var userIsDJ, currentScheduleID, isOK, isOKTimer, hidden, visibilityChange, isHidden, pingInterval;
+	var currentScheduleID, isOK, isOKTimer, hidden, visibilityChange, isHidden, pingInterval;
 	var socket, socketStaysClosed, socketIsBusy, socketNoops, socketOpped;
 	var requestID = 0;
 	var requestQueue = [];
@@ -44,7 +44,6 @@ var RainwaveAPI = (function() {
 		socketNoops = 0;
 
 		if (data) {
-			userIsDJ = data.user && data.user.dj;
 			if (data.api_info) {
 				// This will initialize any clocks first, since this contains the server time
 				performCallbacks({ api_info: data.api_info });
