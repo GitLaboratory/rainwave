@@ -211,7 +211,6 @@ var Router = (function () {
             var new_route = self.get_current_url();
             if (!new_route) {
                 document.body.classList.remove("search_open");
-                document.body.classList.remove("dj_open");
                 if (Sizing.simple) {
                     document.body.classList.remove("playlist");
                     document.body.classList.remove("requests");
@@ -232,7 +231,6 @@ var Router = (function () {
             new_route = new_route.split("/");
             document.body.classList.remove("requests");
             document.body.classList.remove("search_open");
-            document.body.classList.remove("dj_open");
             if (tabs[new_route[0]] || views[new_route[0]]) {
                 self.open_route(new_route[0], new_route[1]);
                 return true;
@@ -244,10 +242,6 @@ var Router = (function () {
                 self.open_route();
                 document.body.classList.add("search_open");
                 setTimeout(SearchPanel.focus, 300);
-                return true;
-            } else if (new_route[0] == "dj") {
-                self.open_route();
-                document.body.classList.add("dj_open");
                 return true;
             } else {
                 // TODO: show error

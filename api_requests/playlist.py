@@ -1,21 +1,17 @@
-from api.web import APIHandler
-from api.web import PrettyPrintAPIMixin
 from api import fieldtypes
-from api.urls import handle_api_url
-from api.urls import handle_api_html_url
+from api.urls import handle_api_html_url, handle_api_url
+from api.web import APIHandler, PrettyPrintAPIMixin
 
 try:
     import ujson as json
 except ImportError:
     import json
 
-from libs import cache
-from libs import db
-from libs import config
+from api.exceptions import APIException
+from libs import cache, config, db
 from libs.pretty_date import pretty_date
 from rainwave import playlist
 from rainwave.playlist_objects.metadata import MetadataNotFoundError
-from api.exceptions import APIException
 
 
 def get_all_albums(sid, user=None, with_searchable=True):
@@ -68,6 +64,7 @@ class AllAlbumsHandler(APIHandler):
             ),
         )
 
+
 @handle_api_url("all_albums_paginated")
 class AllAlbumsPaginatedHandler(APIHandler):
     description = "Returns chunks of a list of all albums on the station playlist."
@@ -81,10 +78,14 @@ class AllAlbumsPaginatedHandler(APIHandler):
             self.return_name,
             {
                 "data": albums,
-                "has_more": albums and playlist.max_album_ids[self.sid] > albums[-1]["album_id"],
-                "progress": int(albums[-1]["album_id"] / playlist.max_album_ids[self.sid])
-            }
+                "has_more": albums
+                and playlist.max_album_ids[self.sid] > albums[-1]["album_id"],
+                "progress": int(
+                    albums[-1]["album_id"] / playlist.max_album_ids[self.sid]
+                ),
+            },
         )
+
 
 @handle_api_url("all_artists")
 class AllArtistsHandler(APIHandler):
@@ -176,9 +177,7 @@ class AlbumHandler(APIHandler):
                 "SELECT sid FROM r4_album_sid WHERE album_id = %s AND sid != 0 ORDER BY sid",
                 (self.get_argument("id"),),
             )
-            if not valid_sids:
-                raise APIException("album_is_dj_only")
-            elif config.get("default_station") in valid_sids:
+            if config.get("default_station") in valid_sids:
                 raise APIException(
                     "album_on_other_station",
                     available_station=config.station_id_friendly[

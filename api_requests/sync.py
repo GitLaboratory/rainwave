@@ -1,36 +1,30 @@
+import asyncio
 import datetime
 import numbers
 import sys
 import uuid
-import asyncio
-from urllib.parse import urlparse
 from time import time as timestamp
+from urllib.parse import urlparse
 
 try:
     import ujson as json
 except ImportError:
     import json
 
-import tornado.web
-import tornado.websocket
-import tornado.ioloop
-import tornado.locks
-
-from api import fieldtypes
-from api.exceptions import APIException
-from api.web import APIHandler
-from api.web import get_browser_locale
-from api.urls import api_endpoints
-from api.urls import handle_api_url
-from rainwave.user import User
-import api_requests.info
 import rainwave.playlist
 import rainwave.schedule
+import tornado.ioloop
+import tornado.locks
+import tornado.web
+import tornado.websocket
+from api import fieldtypes
+from api.exceptions import APIException
+from api.urls import api_endpoints, handle_api_url
+from api.web import APIHandler, get_browser_locale
+from libs import cache, config, log, zeromq
+from rainwave.user import User
 
-from libs import cache
-from libs import log
-from libs import config
-from libs import zeromq
+import api_requests.info
 
 
 class SessionBank:
@@ -129,25 +123,6 @@ class SessionBank:
         )
 
         self.clear()
-
-    def update_dj(self):
-        for session in self.websockets:
-            if session.user.is_dj():
-                try:
-                    session.update_dj_only()
-                    log.debug(
-                        "sync_update_dj", "Updated user %s session." % session.user.id
-                    )
-                except Exception as e:
-                    try:
-                        session.rw_finish()
-                    except:
-                        pass
-                    log.exception(
-                        "sync_update_dj",
-                        "Session failed to be updated during update_dj.",
-                        e,
-                    )
 
     # this function is only called when the user's tune_in status changes
     # though it does send an update for the whole user() object if the situation
@@ -291,8 +266,6 @@ def _on_zmq(messages):
             elif message["action"] == "update_user":
                 for sid in sessions:
                     sessions[sid].update_user(message["user_id"])
-            elif message["action"] == "update_dj":
-                sessions[message["sid"]].update_dj()
             elif message["action"] == "ping":
                 log.debug("zeromq", "Pong")
             elif message["action"] == "vote_by":
@@ -347,16 +320,10 @@ class Sync(APIHandler):
         "known_event_id": (fieldtypes.positive_integer, None),
     }
     is_websocket = False
-    dj = False
     wait_future = None
 
     async def post(self):
         global sessions
-
-        if self.user.is_dj():
-            self.dj = True
-        else:
-            self.dj = False
 
         api_requests.info.check_sync_status(self.sid, self.get_argument("offline_ack"))
 
@@ -852,8 +819,6 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 
             self.refresh_user()
             api_requests.info.attach_info_to_request(handler, live_voting=True)
-            if self.user.is_dj():
-                api_requests.info.attach_dj_info_to_request(handler)
             handler.append("user", self.user.to_private_dict())
             handler.append(
                 "api_info",

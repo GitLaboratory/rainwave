@@ -9,21 +9,6 @@ import api_requests.tune_in
 import api_requests.vote
 
 
-def attach_dj_info_to_request(request):
-    request.append(
-        "dj_info",
-        {
-            "pause_requested": cache.get_station(request.sid, "backend_paused"),
-            "pause_active": cache.get_station(request.sid, "backend_paused_playing"),
-            "pause_title": cache.get_station(request.sid, "pause_title"),
-            "dj_password": cache.get_station(request.sid, "dj_password"),
-            "mount_host": config.get_station(request.sid, "liquidsoap_harbor_host"),
-            "mount_port": config.get_station(request.sid, "liquidsoap_harbor_port"),
-            "mount_url": config.get_station(request.sid, "liquidsoap_harbor_mount"),
-        },
-    )
-
-
 def attach_info_to_request(
     request, extra_list=None, all_lists=False, live_voting=False
 ):
@@ -34,8 +19,6 @@ def attach_info_to_request(
 
     if request.user:
         request.append("user", request.user.to_private_dict())
-        if request.user.is_dj():
-            attach_dj_info_to_request(request)
 
     if not request.mobile:
         if (
@@ -172,7 +155,7 @@ def check_sync_status(sid, offline_ack=False):
 @handle_api_url("info")
 class InfoRequest(APIHandler):
     auth_required = False
-    description = "Returns current user and station information, including current song, listeners, request queue, etc.  all_albums will append a list of all albums to the request (will slow down your request).  current_listeners will add a list of all current listeners to your request.  Setting 'status' to true will have the response change if the station is currently being DJed. (not recommended to set this to true)"
+    description = "Returns current user and station information, including current song, listeners, request queue, etc.  all_albums will append a list of all albums to the request (will slow down your request).  current_listeners will add a list of all current listeners to your request.  status is a deprecated field and does not change the return."
     fields = {
         "all_albums": (fieldtypes.boolean, False),
         "current_listeners": (fieldtypes.boolean, False),
@@ -182,9 +165,6 @@ class InfoRequest(APIHandler):
     allow_cors = True
 
     def post(self):
-        if self.get_argument("status"):
-            check_sync_status(self.sid)
-
         attach_info_to_request(self)
 
 
