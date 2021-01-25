@@ -1,0 +1,30 @@
+{
+  "name": "rainwave",
+  "version": "0.0.1",
+  "description": "Rainwave frontend.",
+  "main": "static/baked/index.js",
+  "scripts": {
+    "lint": "eslint 'static/typescript/*.{js,ts}'",
+    "build": "cd static/typescript && python ../../libs/RWTypelates.py && prettier --write ../../static/typescript/**/*.template.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rmcauley/rainwave.git"
+  },
+  "author": "Robert McAuley",
+  "license": "GPL-2.0-only",
+  "bugs": {
+    "url": "https://github.com/rmcauley/rainwave/issues"
+  },
+  "homepage": "https://rainwave.cc",
+  "dependencies": {
+    "@typescript-eslint/eslint-plugin": "4.14.0",
+    "@typescript-eslint/parser": "4.14.0",
+    "eslint": "7.18.0",
+    "eslint-config-prettier": "7.2.0",
+    "eslint-plugin-import": "2.22.1",
+    "eslint-plugin-prettier": "3.3.1",
+    "prettier": "2.2.1",
+    "typescript": "4.1.3"
+  }
+}

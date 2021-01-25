@@ -1,0 +1,118 @@
+<context song="$song"></context>
+
+<div bind="root" class="timeline-song">
+  <if left="$song.request_id">
+    <div class="timeline-song__cancel" bind="cancel">
+      <span class="timeline-song__cancel__x">x</span>
+    </div>
+  </if>
+
+  <if left="$song.entry_id">
+    <div class="timeline-song__highlight timeline-song__highlight__left"></div>
+    <div class="timeline-song__highlight timeline-song__highlight__right"></div>
+    <div class="timeline-song__highlight timeline-song__highlight__topleft"></div>
+    <div class="timeline-song__highlight timeline-song__highlight__topright"></div>
+    <div class="timeline-song__highlight timeline-song__highlight__bottomleft"></div>
+    <div class="timeline-song__highlight timeline-song__highlight__bottomright"></div>
+  </if>
+
+  <if left="$enable_vote_button">
+    <div class="timeline-song__vote-button">
+      <span class="timeline-song__vote-button__text" bind="voteButtonText">
+        {{ $l("vote") }}
+      </span>
+    </div>
+  </if>
+
+  <div class="timeline-song__art-anchor">
+    <if left="request_id">
+      <div class="timeline-song-request-sort-grab" bind="requestDrag">
+        <img src="/static/images4/sort.svg" />
+      </div>
+    </if>
+    <div class="timeline-song__art-container" bind="art">
+      <if left="show_station_indicator">
+        <div
+          class="power_only timeline-song__station-indicator $station_indicator_className"
+        ></div>
+      </if>
+
+      <if left="$song.elec_request_user_id">
+        <div class="timeline-song__requester $yourRequestClassName">
+          <if not left="$MOBILE">
+            <a href="#!/listener/{{ elec_request_user_id }}">
+              {{ $song.elec_request_username }}
+            </a>
+          </if>
+          <else>
+            {{ $song.elec_request_username }}
+          </else>
+        </div>
+        <div class="timeline-song__request-indicator $yourRequestIndicatorClassName">
+          <if left="$yourRequest">
+            {{ $l("timeline_art__request_indicator") }}
+          </if>
+          <else>
+            {{ $l("timeline_art__your_request_indicator") }}
+          </else>
+        </div>
+      </if>
+    </div>
+  </div>
+
+  <div class="timeline-song__content">
+    <Rating context="this"></Rating>
+
+    <if left="$song.entry_id">
+      <div class="timeline-song__content__entry-votes">
+        <span bind="votes"></span>
+      </div>
+    </if>
+
+    <Fave context="$song" bind="songFave"></Fave>
+
+    <div class="timeline-song__content__title" bind="title" title="$song.title">
+      {{ $song.title }}
+    </div>
+
+    <if not left="Sizing.simple">
+      <AlbumRating context="$song.albums[0]"></AlbumRating>
+    </if>
+
+    <Fave context="$song.albums[0]" bind="albumFave"></Fave>
+
+    <div
+      bind="albumName"
+      class="timeline-song__content__album"
+      title="$song.albums[0].name"
+    >
+      <a href="$albumLink">{{ $song.albums[0].name }}</a>
+    </div>
+
+    <if left="$song.request_id">
+      <div class="timeline-song__content__cooldown-info" bind="cooldown"></div>
+    </if>
+    <else>
+      <div class="timeline-song__content__artist">
+        <foreach array="$song.artists">
+          <a href="$href">
+            {{ name }}
+          </a>
+          <span class="timeline-song__content__artist__comma">,</span>
+        </foreach>
+      </div>
+
+      <if left="$song.url">
+        <div class="timeline-song__content__song_link">
+          <a
+            class="timeline-song__content__song_link__link"
+            href="$song.url"
+            target="_blank"
+          >
+            {{ $song.link_text }}
+          </a>
+        </div>
+      </if>
+    </else>
+  </div>
+</div>
