@@ -93,7 +93,6 @@ module.exports = {
     camelcase: "off",
     curly: "error",
     eqeqeq: "error",
-    "import/exports-last": "error",
     "import/first": "error",
     "import/group-exports": "error",
     "import/no-default-export": "off",
@@ -118,4 +117,13 @@ module.exports = {
     "require-await": "error",
     yoda: "error",
   },
+
+  overrides: [
+    {
+      files: ["*.template.ts"],
+      rules: {
+        "prefer-const": "off",
+      },
+    },
+  ],
 };

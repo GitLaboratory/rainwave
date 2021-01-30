@@ -1,7 +1,4 @@
 {
-  "editor.codeActionsOnSave": {
-    "source.organizeImports": true,
-  },
   "files.exclude": {
     "**/*.pyc": true,
     "static/baked/**": true

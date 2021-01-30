@@ -5,7 +5,7 @@
   "main": "static/baked/index.js",
   "scripts": {
     "lint": "eslint 'static/typescript/*.{js,ts}'",
-    "build": "cd static/typescript && python ../../libs/RWTypelates.py && prettier --write ../../static/typescript/**/*.template.ts"
+    "build": "cd static/typescript && python ../../scripts/compile_typelates.py && prettier --write ../../static/typescript/**/*.template.ts"
   },
   "repository": {
     "type": "git",

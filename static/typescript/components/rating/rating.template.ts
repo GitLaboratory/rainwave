@@ -1,5 +1,5 @@
-interface RatingTemplate {
-  rootFragment: DocumentFragment;
+export interface RatingTemplate {
+  rootFragment: HTMLElement | DocumentFragment;
   root: HTMLDivElement;
 }
 
@@ -7,9 +7,12 @@ interface Context {}
 
 export default function rating(
   context: Context,
-  rootFragment: DocumentFragment = document.createDocumentFragment()
+  rootFragment:
+    | HTMLElement
+    | DocumentFragment = document.createDocumentFragment()
 ): RatingTemplate {
-  const C = document.createElement("div");
+  let C: HTMLDivElement;
+  C = document.createElement("div");
   rootFragment.appendChild(C);
   const result: RatingTemplate = { rootFragment, root: C };
   return result;

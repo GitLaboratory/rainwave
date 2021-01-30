@@ -1,5 +1,5 @@
-interface FaveTemplate {
-  rootFragment: DocumentFragment;
+export interface FaveTemplate {
+  rootFragment: HTMLElement | DocumentFragment;
   root: HTMLDivElement;
 }
 
@@ -7,9 +7,12 @@ interface Context {}
 
 export default function fave(
   context: Context,
-  rootFragment: DocumentFragment = document.createDocumentFragment()
+  rootFragment:
+    | HTMLElement
+    | DocumentFragment = document.createDocumentFragment()
 ): FaveTemplate {
-  const C = document.createElement("div");
+  let C: HTMLDivElement;
+  C = document.createElement("div");
   rootFragment.appendChild(C);
   const result: FaveTemplate = { rootFragment, root: C };
   return result;

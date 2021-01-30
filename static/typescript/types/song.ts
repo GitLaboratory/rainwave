@@ -28,6 +28,7 @@ export interface Song {
   rating_count: number;
   rating_user: number | null;
   rating: number;
+  request_id?: number;
   request_count: number;
   sid: Stations;
   title: string;

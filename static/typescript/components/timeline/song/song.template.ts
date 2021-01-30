@@ -1,189 +1,225 @@
-import * as FaveTemplate from "components/fave/fave.template";
-import * as RatingTemplate from "components/rating/rating.template";
-import * as $l from "templateHelpers/gettext";
-import * as SongType from "types/song";
+import $l from "templateHelpers/gettext";
+import rating, { RatingTemplate } from "components/rating/rating.template";
+import fave, { FaveTemplate } from "components/fave/fave.template";
+import Song from "types/song";
+import Sizing from "types/sizing";
 
-interface SongTemplate {
-  rootFragment: DocumentFragment;
-  cancel: HTMLDivElement;
-  voteButtonText: HTMLSpanElement;
-  requestDrag: HTMLDivElement;
+export interface SongTemplate {
+  rootFragment: HTMLElement | DocumentFragment;
+  cancel: HTMLDivElement | undefined;
+  voteButtonText: HTMLSpanElement | undefined;
+  requestDrag: HTMLDivElement | undefined;
   art: HTMLDivElement;
   rating: RatingTemplate;
-  votes: HTMLSpanElement;
+  votes: HTMLSpanElement | undefined;
   songFave: FaveTemplate;
   title: HTMLDivElement;
   albumFave: FaveTemplate;
   albumName: HTMLDivElement;
-  cooldown: HTMLDivElement;
+  cooldown: HTMLDivElement | undefined;
   root: HTMLDivElement;
 }
 
 interface Context {
-  song: SongType;
+  song: Song;
+  enableVoteButton: boolean;
+  showStationIndicator: boolean;
+  MOBILE: boolean;
+  yourRequest: boolean;
+  sizing: Sizing;
+  stationIndicatorClassname: string;
+  yourRequestClassName: string;
+  yourRequestIndicatorClassName: string;
 }
 
 export default function song(
   context: Context,
-  rootFragment: DocumentFragment = document.createDocumentFragment()
+  rootFragment:
+    | HTMLElement
+    | DocumentFragment = document.createDocumentFragment()
 ): SongTemplate {
-  const C = document.createElement("div");
-  C.className = `timeline-song`;
-  rootFragment.appendChild(C);
+  let N: HTMLDivElement | undefined;
+  let Y: HTMLSpanElement | undefined;
+  let b: HTMLDivElement | undefined;
+  let d: HTMLDivElement;
+  let q: RatingTemplate;
+  let t: HTMLSpanElement | undefined;
+  let u: FaveTemplate;
+  let v: HTMLDivElement;
+  let y: FaveTemplate;
+  let z: HTMLDivElement;
+  let zC: HTMLDivElement | undefined;
+  let L: HTMLDivElement;
+  L = document.createElement("div");
+  L.className = `timeline-song`;
+  rootFragment.appendChild(L);
   if (context.song.request_id) {
-    const E = document.createElement("div");
-    E.className = `timeline-song__cancel`;
-    C.appendChild(E);
-    const F = document.createElement("span");
-    F.className = `timeline-song__cancel__x`;
-    E.appendChild(F);
+    N = document.createElement("div");
+    N.className = `timeline-song__cancel`;
+    L.appendChild(N);
+    const O = document.createElement("span");
+    O.className = `timeline-song__cancel__x`;
+    N.appendChild(O);
+    O.appendChild(document.createTextNode(`x`));
   }
   if (context.song.entry_id) {
-    const H = document.createElement("div");
-    H.className = `timeline-song__highlight timeline-song__highlight__left timeline-song__highlight timeline-song__highlight__left`;
-    C.appendChild(H);
-    const I = document.createElement("div");
-    I.className = `timeline-song__highlight timeline-song__highlight__right timeline-song__highlight timeline-song__highlight__right`;
-    C.appendChild(I);
-    const J = document.createElement("div");
-    J.className = `timeline-song__highlight timeline-song__highlight__topleft timeline-song__highlight timeline-song__highlight__topleft`;
-    C.appendChild(J);
-    const K = document.createElement("div");
-    K.className = `timeline-song__highlight timeline-song__highlight__topright timeline-song__highlight timeline-song__highlight__topright`;
-    C.appendChild(K);
-    const L = document.createElement("div");
-    L.className = `timeline-song__highlight timeline-song__highlight__bottomleft timeline-song__highlight timeline-song__highlight__bottomleft`;
-    C.appendChild(L);
-    const M = document.createElement("div");
-    M.className = `timeline-song__highlight timeline-song__highlight__bottomright timeline-song__highlight timeline-song__highlight__bottomright`;
-    C.appendChild(M);
-  }
-  if (context.enable_vote_button) {
-    const O = document.createElement("div");
-    O.className = `timeline-song__vote-button`;
-    C.appendChild(O);
-    const P = document.createElement("span");
-    P.className = `timeline-song__vote-button__text`;
-    O.appendChild(P);
-    P.appendChild(document.createTextNode($l("vote")));
-  }
-  const Q = document.createElement("div");
-  Q.className = `timeline-song__art-anchor`;
-  C.appendChild(Q);
-  if (request_id) {
+    const Q = document.createElement("div");
+    Q.className = `timeline-song__highlight timeline-song__highlight__left`;
+    L.appendChild(Q);
+    const R = document.createElement("div");
+    R.className = `timeline-song__highlight timeline-song__highlight__right`;
+    L.appendChild(R);
     const S = document.createElement("div");
-    S.className = `timeline-song-request-sort-grab`;
-    Q.appendChild(S);
-    const T = document.createElement("img");
-    T.setAttribute("src", /static/4aegims / sort.svg);
-    S.appendChild(T);
+    S.className = `timeline-song__highlight timeline-song__highlight__topleft`;
+    L.appendChild(S);
+    const T = document.createElement("div");
+    T.className = `timeline-song__highlight timeline-song__highlight__topright`;
+    L.appendChild(T);
+    const U = document.createElement("div");
+    U.className = `timeline-song__highlight timeline-song__highlight__bottomleft`;
+    L.appendChild(U);
+    const V = document.createElement("div");
+    V.className = `timeline-song__highlight timeline-song__highlight__bottomright`;
+    L.appendChild(V);
   }
-  const U = document.createElement("div");
-  U.className = `timeline-song__art-container`;
-  Q.appendChild(U);
-  if (show_station_indicator) {
-    const W = document.createElement("div");
-    W.className = `power_only timeline-song__station-indicator $station_indicator_className power_only timeline-song__station-indicator $station_indicator_className power_only timeline-song__station-indicator $station_indicator_className`;
-    U.appendChild(W);
+  if (context.enableVoteButton) {
+    const X = document.createElement("div");
+    X.className = `timeline-song__vote-button`;
+    L.appendChild(X);
+    Y = document.createElement("span");
+    Y.className = `timeline-song__vote-button__text`;
+    X.appendChild(Y);
+    Y.appendChild(document.createTextNode(`${$l("vote")}`));
+  }
+  const Z = document.createElement("div");
+  Z.className = `timeline-song__art-anchor`;
+  L.appendChild(Z);
+  if (context.song.request_id) {
+    b = document.createElement("div");
+    b.className = `timeline-song__request-sort-grab`;
+    Z.appendChild(b);
+    const c = document.createElement("img");
+    c.setAttribute("src", `/static/images4/sort.svg`);
+    b.appendChild(c);
+  }
+  d = document.createElement("div");
+  d.className = `timeline-song__art-container`;
+  Z.appendChild(d);
+  if (context.showStationIndicator) {
+    const f = document.createElement("div");
+    f.className = `power_only timeline-song__station-indicator ${context.stationIndicatorClassname}`;
+    d.appendChild(f);
   }
   if (context.song.elec_request_user_id) {
-    const Y = document.createElement("div");
-    Y.className = `timeline-song__requester $yourRequestClassName timeline-song__requester $yourRequestClassName`;
-    U.appendChild(Y);
-    if (!context.MOBILE) {
-      const a = document.createElement("a");
-      a.href = "#!/listener/{{ elec_request_user_id }}";
-      Y.appendChild(a);
-      a.appendChild(document.createTextNode(context.song.elec_request_username));
-    } else {
-      Y.appendChild(document.createTextNode(context.song.elec_request_username));
+    if (context.song.elec_request_username) {
+      const i = document.createElement("div");
+      i.className = `timeline-song__requester ${context.yourRequestClassName}`;
+      d.appendChild(i);
+      if (!context.MOBILE) {
+        const k = document.createElement("a");
+        k.href = `#!/listener/${context.song.elec_request_user_id}`;
+        i.appendChild(k);
+        k.appendChild(
+          document.createTextNode(`${context.song.elec_request_username}`)
+        );
+      } else {
+        i.appendChild(
+          document.createTextNode(`${context.song.elec_request_username}`)
+        );
+      }
+      const m = document.createElement("div");
+      m.className = `timeline-song__request-indicator ${context.yourRequestIndicatorClassName}`;
+      d.appendChild(m);
+      if (context.yourRequest) {
+        m.appendChild(
+          document.createTextNode(`${$l("timeline_art__request_indicator")}`)
+        );
+      } else {
+        m.appendChild(
+          document.createTextNode(
+            `${$l("timeline_art__your_request_indicator")}`
+          )
+        );
+      }
     }
-    const c = document.createElement("div");
-    c.className = `timeline-song__request-indicator $yourRequestIndicatorClassName timeline-song__request-indicator $yourRequestIndicatorClassName`;
-    U.appendChild(c);
-    if (context.yourRequest) {
-      c.appendChild(document.createTextNode($l("timeline_art__request_indicator")));
-    } else {
-      c.appendChild(
-        document.createTextNode($l("timeline_art__your_request_indicator"))
-      );
-    }
   }
-  const f = document.createElement("div");
-  f.className = `timeline-song__content`;
-  C.appendChild(f);
-  const g = rating<Context>(context, f);
-  if (context.song.entry_id) {
-    const i = document.createElement("div");
-    i.className = `timeline-song__content__entry-votes`;
-    f.appendChild(i);
-    const j = document.createElement("span");
-    i.appendChild(j);
-  }
-  const k = fave<Context["$song"]>(context.$song, f);
-  const l = document.createElement("div");
-  l.className = `timeline-song__content__title`;
-  l.setAttribute("title", context.song.title);
-  f.appendChild(l);
-  l.appendChild(document.createTextNode(context.song.title));
-  if (!Sizing.simple) {
-    const n = document.createElement("albumrating");
-    n.setAttribute("context", context.song.albums[0]);
-    f.appendChild(n);
-  }
-  const o = fave<Context["$song.albums[0]"]>(context.$song.albums[0], f);
   const p = document.createElement("div");
-  p.className = `timeline-song__content__album`;
-  p.setAttribute("title", context.song.albums[0].name);
-  f.appendChild(p);
-  const q = document.createElement("a");
-  q.href = "context.albumLink";
-  p.appendChild(q);
-  q.appendChild(document.createTextNode(context.song.albums[0].name));
-  if (context.song.request_id) {
+  p.className = `timeline-song__content`;
+  L.appendChild(p);
+  q = rating(context, p);
+  if (context.song.entry_id) {
     const s = document.createElement("div");
-    s.className = `timeline-song__content__cooldown-info`;
-    f.appendChild(s);
+    s.className = `timeline-song__content__entry-votes`;
+    p.appendChild(s);
+    t = document.createElement("span");
+    s.appendChild(t);
+  }
+  u = fave(context.song, p);
+  v = document.createElement("div");
+  v.className = `timeline-song__content__title`;
+  v.setAttribute("title", `context.song.title`);
+  p.appendChild(v);
+  v.appendChild(document.createTextNode(`${context.song.title}`));
+  if (!context.sizing.simple) {
+    const x = document.createElement("albumrating");
+    x.setAttribute("context", `context.song.albums[0]`);
+    p.appendChild(x);
+  }
+  y = fave(context.song.albums[0], p);
+  z = document.createElement("div");
+  z.className = `timeline-song__content__album`;
+  z.setAttribute("title", `context.song.albums[0].name`);
+  p.appendChild(z);
+  const zA = document.createElement("a");
+  zA.href = `#!/album/${context.song.albums[0].id}`;
+  z.appendChild(zA);
+  zA.appendChild(document.createTextNode(`${context.song.albums[0].name}`));
+  if (context.song.request_id) {
+    zC = document.createElement("div");
+    zC.className = `timeline-song__content__cooldown-info`;
+    p.appendChild(zC);
   } else {
-    const u = document.createElement("div");
-    u.className = `timeline-song__content__artist`;
-    f.appendChild(u);
-    const v = document.createElement("foreach");
-    v.setAttribute("array", context.song.artists);
-    u.appendChild(v);
-    const w = document.createElement("a");
-    w.href = "context.href";
-    v.appendChild(w);
-    w.appendChild(document.createTextNode(name));
-    const x = document.createElement("span");
-    x.className = `timeline-song__content__artist__comma`;
-    v.appendChild(x);
+    const zE = document.createElement("div");
+    zE.className = `timeline-song__content__artist`;
+    p.appendChild(zE);
+    context.song.artists.forEach((context) => {
+      const zG = document.createElement("a");
+      zG.href = `#!/artist/${context.id}`;
+      zE.appendChild(zG);
+      zG.appendChild(document.createTextNode(`${context.name}`));
+      const zH = document.createElement("span");
+      zH.className = `timeline-song__content__artist__comma`;
+      zE.appendChild(zH);
+      zH.appendChild(document.createTextNode(`,`));
+    });
     if (context.song.url) {
-      const z = document.createElement("div");
-      z.className = `timeline-song__content__song_link`;
-      f.appendChild(z);
-      const zA = document.createElement("a");
-      zA.className = `timeline-song__content__song_link__link`;
-      zA.href = "context.song.url";
-      zA.setAttribute("target", _blank);
-      z.appendChild(zA);
-      zA.appendChild(document.createTextNode(context.song.link_text));
+      if (context.song.link_text) {
+        const zK = document.createElement("div");
+        zK.className = `timeline-song__content__song_link`;
+        p.appendChild(zK);
+        const zL = document.createElement("a");
+        zL.className = `timeline-song__content__song_link__link`;
+        zL.href = `${context.song.url}`;
+        zL.setAttribute("target", `_blank`);
+        zK.appendChild(zL);
+        zL.appendChild(document.createTextNode(`${context.song.link_text}`));
+      }
     }
   }
   const result: SongTemplate = {
     rootFragment,
-    cancel: E,
-    voteButtonText: P,
-    requestDrag: S,
-    art: U,
-    rating: g,
-    votes: j,
-    songFave: k,
-    title: l,
-    albumFave: o,
-    albumName: p,
-    cooldown: s,
-    root: C,
+    cancel: N,
+    voteButtonText: Y,
+    requestDrag: b,
+    art: d,
+    rating: q,
+    votes: t,
+    songFave: u,
+    title: v,
+    albumFave: y,
+    albumName: z,
+    cooldown: zC,
+    root: L,
   };
   return result;
 }
