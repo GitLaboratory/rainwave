@@ -11,13 +11,13 @@
 </context>
 
 <div bind="root" class="timeline-song">
-  <if left="context.song.request_id">
+  <if condition="context.song.request_id">
     <div class="timeline-song__cancel" bind="cancel">
       <span class="timeline-song__cancel__x">x</span>
     </div>
   </if>
 
-  <if left="context.song.entry_id">
+  <if condition="context.song.entry_id">
     <div class="timeline-song__highlight timeline-song__highlight__left"></div>
     <div class="timeline-song__highlight timeline-song__highlight__right"></div>
     <div class="timeline-song__highlight timeline-song__highlight__topleft"></div>
@@ -26,7 +26,7 @@
     <div class="timeline-song__highlight timeline-song__highlight__bottomright"></div>
   </if>
 
-  <if left="context.enableVoteButton">
+  <if condition="context.enableVoteButton">
     <div class="timeline-song__vote-button">
       <span class="timeline-song__vote-button__text" bind="voteButtonText">
         ${ $l("vote") }
@@ -35,22 +35,22 @@
   </if>
 
   <div class="timeline-song__art-anchor">
-    <if left="context.song.request_id">
+    <if condition="context.song.request_id">
       <div class="timeline-song__request-sort-grab" bind="requestDrag">
         <img src="/static/images4/sort.svg" />
       </div>
     </if>
     <div class="timeline-song__art-container" bind="art">
-      <if left="context.showStationIndicator">
+      <if condition="context.showStationIndicator">
         <div
           class="power_only timeline-song__station-indicator ${context.stationIndicatorClassname}"
         ></div>
       </if>
 
-      <if left="context.song.elec_request_user_id">
-        <if left="context.song.elec_request_username">
+      <if condition="context.song.elec_request_user_id">
+        <if condition="context.song.elec_request_username">
           <div class="timeline-song__requester ${context.yourRequestClassName}">
-            <if not left="context.MOBILE">
+            <if condition="!context.MOBILE">
               <a href="#!/listener/${ context.song.elec_request_user_id }">
                 ${ context.song.elec_request_username }
               </a>
@@ -60,7 +60,7 @@
           <div
             class="timeline-song__request-indicator ${context.yourRequestIndicatorClassName}"
           >
-            <if left="context.yourRequest">
+            <if condition="context.yourRequest">
               ${ $l("timeline_art__request_indicator") }
             </if>
             <else> ${ $l("timeline_art__your_request_indicator") } </else>
@@ -73,7 +73,7 @@
   <div class="timeline-song__content">
     <Rating></Rating>
 
-    <if left="context.song.entry_id">
+    <if condition="context.song.entry_id">
       <div class="timeline-song__content__entry-votes">
         <span bind="votes"></span>
       </div>
@@ -85,7 +85,7 @@
       ${ context.song.title }
     </div>
 
-    <if not left="context.sizing.simple">
+    <if condition="!context.sizing.simple">
       <AlbumRating context="context.song.albums[0]"></AlbumRating>
     </if>
 
@@ -101,7 +101,7 @@
       </a>
     </div>
 
-    <if left="context.song.request_id">
+    <if condition="context.song.request_id">
       <div class="timeline-song__content__cooldown-info" bind="cooldown"></div>
     </if>
     <else>
@@ -112,8 +112,8 @@
         </foreach>
       </div>
 
-      <if left="context.song.url">
-        <if left="context.song.link_text">
+      <if condition="context.song.url">
+        <if condition="context.song.link_text">
           <div class="timeline-song__content__song_link">
             <a
               class="timeline-song__content__song_link__link"
