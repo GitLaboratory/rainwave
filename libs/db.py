@@ -123,7 +123,7 @@ class PostgresCursor(psycopg2.extras.RealDictCursor):
         self.in_tx = False
 
 
-c: PostgresCursor = None
+c = None
 connection = None
 connection_errors = (psycopg2.OperationalError, psycopg2.InterfaceError)
 

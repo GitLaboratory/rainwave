@@ -1,5 +1,7 @@
 import os
+
 import tornado.web
+
 import api.help
 
 request_classes = [
@@ -42,6 +44,11 @@ class handle_url:
             cls, "is_websocket", False
         ):
             api_endpoints[cls.url] = cls
+        if hasattr(cls, "return_name"):
+            cls.return_name = (
+                cls.return_name or self.url[self.url.rfind("/") + 1 :] + "_result"
+            )
+            print(cls.return_name)
         return cls
 
 

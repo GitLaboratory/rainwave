@@ -1,4 +1,4 @@
-export enum Stations {
+export enum Station {
   game = 1,
   ocremix = 2,
   covers = 3,
@@ -6,4 +6,4 @@ export enum Stations {
   all = 5,
 }
 
-export default Stations;
+export default Station;
