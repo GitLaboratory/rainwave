@@ -1,4 +1,3 @@
-import { RainwaveSDKUsageError } from "./errors";
 import {
   ALL_RAINWAVE_RESPONSE_KEYS,
   RainwaveResponseKey,
@@ -9,17 +8,14 @@ import Station from "./types/station";
 type Listener = (data: RainwaveResponseTypes[RainwaveResponseKey]) => void;
 type Listeners = Record<RainwaveResponseKey, Listener[]>;
 
-interface RainwaveRequestOptions {
+interface RainwaveOptions {
   userId: number;
   apiKey: string;
   sid: Station;
   url: string;
-}
-
-interface RainwaveOptions {
-  debug?: (msg: string) => void;
-  maxRetries?: number;
-  onSocketError?: (error: Error) => void;
+  debug: (msg: string) => void;
+  maxRetries: number;
+  onSocketError: (error: Error) => void;
 }
 
 const WEBSOCKET_CHECK_TIMEOUT_MS = 3000;
@@ -31,7 +27,10 @@ export default class Rainwave {
     {} as Listeners
   );
 
-  #defaultRequestOptions: Partial<RainwaveRequestOptions>;
+  #userId: number;
+  #apiKey: string;
+  #sid: Station;
+  #url: string;
   #debug: (msg: string) => void;
   #onSocketError: (error: Error) => void;
   #socket?: WebSocket;
@@ -49,52 +48,16 @@ export default class Rainwave {
   #sentRequests: Record<string, unknown>[] = [];
 
   constructor(
-    defaultRequestOptions: Partial<RainwaveRequestOptions>,
-    options?: RainwaveOptions
+    options: Partial<RainwaveOptions> &
+      Pick<RainwaveOptions, "userId" | "apiKey" | "sid">
   ) {
-    this.#defaultRequestOptions = {
-      userId: defaultRequestOptions.userId,
-      apiKey: defaultRequestOptions.apiKey,
-      sid: defaultRequestOptions.sid,
-      url: defaultRequestOptions.url || "wss://rainwave.cc/api4/websocket/",
-    };
-
+    this.#userId = options.userId;
+    this.#apiKey = options.apiKey;
+    this.#sid = options.sid;
+    this.#url = options.url || "wss://rainwave.cc/api4/websocket/";
     this.#debug = options?.debug || ((): void => {});
     this.#maxRetries = options?.maxRetries ?? 0;
     this.#onSocketError = options?.onSocketError || ((): void => {});
-  }
-
-  private _getRequestOptions(
-    requestOptions?: Partial<RainwaveRequestOptions>
-  ): RainwaveRequestOptions {
-    const apiKey = this.#defaultRequestOptions.apiKey || requestOptions?.apiKey;
-    if (!apiKey) {
-      throw new RainwaveSDKUsageError(
-        "Missing 'apiKey' option for Rainwave request."
-      );
-    }
-    const sid = this.#defaultRequestOptions.sid || requestOptions?.sid;
-    if (!sid) {
-      throw new RainwaveSDKUsageError(
-        "Missing 'sid' (station ID) option for Rainwave request."
-      );
-    }
-    const userId = this.#defaultRequestOptions.userId || requestOptions?.userId;
-    if (!userId) {
-      throw new RainwaveSDKUsageError(
-        "Missing `userId` option for Rainwave request."
-      );
-    }
-    const url = this.#defaultRequestOptions.url || requestOptions?.url;
-    if (!url) {
-      throw new RainwaveSDKUsageError("Missing `url` option for Rainwave.");
-    }
-    return {
-      apiKey,
-      sid,
-      userId,
-      url,
-    };
   }
 
   private _addListener(event: RainwaveResponseKey, fn: Listener): void {
@@ -107,9 +70,7 @@ export default class Rainwave {
 
   public off(event: RainwaveResponseKey, fn: Listener): void {
     const existingListeners = this.#listeners[event];
-    const oopsiePookums = existingListeners.filter(
-      (listener) => listener !== fn
-    );
+    const oopsiePookums = existingListeners.filter((listener) => listener !== fn);
     this.#listeners[event] = oopsiePookums;
   }
 
@@ -308,7 +269,7 @@ export default class Rainwave {
 
   // Socket Functions **************************************************************************************
 
-  public startWebsocketSync(requestOptions: RainwaveRequestOptions): void {
+  public startWebsocketSync(): void {
     if (this.#socket?.readyState === WebSocket.OPEN) {
       return;
     }
@@ -321,8 +282,7 @@ export default class Rainwave {
       WEBSOCKET_CHECK_TIMEOUT_MS
     );
 
-    const options = this._getRequestOptions(requestOptions);
-    const socket = new WebSocket(`${options.url}/websocket/${options.sid}`);
+    const socket = new WebSocket(`${this.#url}/websocket/${this.#sid}`);
     socket.addEventListener("open", () => {
       this.#debug("Socket open.");
       this.#socketOpped = false;
@@ -330,8 +290,8 @@ export default class Rainwave {
         socket.send(
           JSON.stringify({
             action: "auth",
-            user_id: options.userId,
-            key: options.apiKey,
+            user_id: this.#userId,
+            key: this.#apiKey,
           })
         );
       } catch (error) {
@@ -457,16 +417,6 @@ export default class Rainwave {
   // 	socketStaysClosed = true;
   // 	closeSocket();
   // };
-
-  // Visibility Changing ***********************************************************************************
-
-  private _onVisibilityChange(): void {
-    if (document.hidden) {
-      this._closeWebsocket();
-    } else {
-      this._initWebSocket();
-    }
-  }
 
   // // Ping and Pong *****************************************************************************************
 
@@ -721,3 +671,8 @@ export default class Rainwave {
   // 		throw e;
   // 	}
 }
+
+const test = new Rainwave({ userId: 1, apiKey: "1", sid: 1 });
+test.on("album", (returnedAlbum) => {
+  console.log(returnedAlbum);
+});
