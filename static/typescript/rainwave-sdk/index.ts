@@ -1,12 +1,11 @@
+import RainwaveEventListener from "./eventListener";
+
 import {
   ALL_RAINWAVE_RESPONSE_KEYS,
-  RainwaveResponseKey,
   RainwaveResponseTypes,
-} from "./responseTypes";
-import Station from "./types/station";
+} from "./types/response";
 
-type Listener = (data: RainwaveResponseTypes[RainwaveResponseKey]) => void;
-type Listeners = Record<RainwaveResponseKey, Listener[]>;
+import Station from "./types/station";
 
 interface RainwaveOptions {
   userId: number;
@@ -21,12 +20,7 @@ interface RainwaveOptions {
 const WEBSOCKET_CHECK_TIMEOUT_MS = 3000;
 const DEFAULT_RECONNECT_TIMEOUT = 500;
 
-export default class Rainwave {
-  #listeners: Listeners = ALL_RAINWAVE_RESPONSE_KEYS.reduce(
-    (accumulated, key) => ({ ...accumulated, [key]: [] }),
-    {} as Listeners
-  );
-
+export default class Rainwave extends RainwaveEventListener<RainwaveResponseTypes> {
   #userId: number;
   #apiKey: string;
   #sid: Station;
@@ -51,6 +45,7 @@ export default class Rainwave {
     options: Partial<RainwaveOptions> &
       Pick<RainwaveOptions, "userId" | "apiKey" | "sid">
   ) {
+    super(ALL_RAINWAVE_RESPONSE_KEYS);
     this.#userId = options.userId;
     this.#apiKey = options.apiKey;
     this.#sid = options.sid;
@@ -58,36 +53,6 @@ export default class Rainwave {
     this.#debug = options?.debug || ((): void => {});
     this.#maxRetries = options?.maxRetries ?? 0;
     this.#onSocketError = options?.onSocketError || ((): void => {});
-  }
-
-  private _addListener(event: RainwaveResponseKey, fn: Listener): void {
-    this.#listeners[event].push(fn);
-  }
-
-  public on(event: RainwaveResponseKey, fn: Listener): void {
-    this._addListener(event, fn);
-  }
-
-  public off(event: RainwaveResponseKey, fn: Listener): void {
-    const existingListeners = this.#listeners[event];
-    const oopsiePookums = existingListeners.filter((listener) => listener !== fn);
-    this.#listeners[event] = oopsiePookums;
-  }
-
-  public emit<K extends RainwaveResponseKey>(
-    event: K,
-    data: RainwaveResponseTypes[K]
-  ): void {
-    const listeners = this.#listeners[event];
-    listeners.forEach((listener) => listener(data));
-  }
-
-  public listeners(event: RainwaveResponseKey): Listener[] {
-    return this.#listeners[event];
-  }
-
-  public listenersCount<K extends RainwaveResponseKey>(event: K): number {
-    return this.#listeners[event]?.length ?? 0;
   }
 
   // public async album(
@@ -674,5 +639,5 @@ export default class Rainwave {
 
 const test = new Rainwave({ userId: 1, apiKey: "1", sid: 1 });
 test.on("album", (returnedAlbum) => {
-  console.log(returnedAlbum);
+  console.log(returnedAlbum.a);
 });

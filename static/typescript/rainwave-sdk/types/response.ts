@@ -1,9 +1,9 @@
-import Album from "./types/album";
-import User from "./types/user";
+import Album from "./album";
+import User from "./user";
 
 export interface RainwaveResponseTypes {
   album: Album;
-  all_albums_by_cursor: unknown;
+  all_albums_by_cursor: 1;
   all_artists: unknown;
   all_faves: unknown;
   all_groups: unknown;
@@ -59,7 +59,9 @@ export interface RainwaveResponseTypes {
   websocket_host: unknown;
 }
 
-export const ALL_RAINWAVE_RESPONSE_KEYS: Array<keyof RainwaveResponseTypes> = [
+export type RainwaveResponseKey = keyof RainwaveResponseTypes;
+
+export const ALL_RAINWAVE_RESPONSE_KEYS: Array<RainwaveResponseKey> = [
   "album",
   "all_albums_by_cursor",
   "all_artists",
@@ -116,5 +118,3 @@ export const ALL_RAINWAVE_RESPONSE_KEYS: Array<keyof RainwaveResponseTypes> = [
   "vote_result",
   "websocket_host",
 ];
-
-export type RainwaveResponseKey = typeof ALL_RAINWAVE_RESPONSE_KEYS[number];
