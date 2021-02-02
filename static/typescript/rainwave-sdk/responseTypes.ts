@@ -1,5 +1,62 @@
 import User from "./types/user";
 
+export type ResponseKeys =
+  | "album"
+  | "all_albums_by_cursor"
+  | "all_artists"
+  | "all_faves"
+  | "all_groups"
+  | "all_songs"
+  | "all_stations_info"
+  | "already_voted"
+  | "artist"
+  | "build_version"
+  | "cookie_domain"
+  | "delete_request_result"
+  | "error_report_result"
+  | "error"
+  | "fave_album_result"
+  | "fave_all_songs_result"
+  | "fave_song_result"
+  | "group"
+  | "listener"
+  | "live_voting"
+  | "locale"
+  | "locales"
+  | "mobile"
+  | "on_draw"
+  | "on_init"
+  | "on_measure"
+  | "pause_request_queue_result"
+  | "playback_history"
+  | "rate_result"
+  | "redownload_m3u"
+  | "relays"
+  | "request_favorited_songs_result"
+  | "request_line_result"
+  | "request_line"
+  | "request_result"
+  | "request_unrated_songs_result"
+  | "requests"
+  | "sched_current"
+  | "sched_history"
+  | "sched_next"
+  | "search_results"
+  | "song"
+  | "station_list"
+  | "station_song_count"
+  | "stations"
+  | "stream_filename"
+  | "top_100"
+  | "unpause_request_queue_result"
+  | "unrated_songs"
+  | "user_info_result"
+  | "user_recent_votes"
+  | "user_requested_history"
+  | "user"
+  | "vote_result"
+  | "websocket_host";
+
 export interface ResponseTypes {
   album: unknown;
   all_albums_by_cursor: unknown;
@@ -58,14 +115,60 @@ export interface ResponseTypes {
   websocket_host: unknown;
 }
 
-export interface InfoResponse {
-  all_stations_info: ResponseTypes["all_stations_info"];
-  already_voted?: ResponseTypes["already_voted"];
-  live_voting?: ResponseTypes["live_voting"];
-  request_line?: ResponseTypes["request_line"];
-  requests?: ResponseTypes["requests"];
-  sched_current: ResponseTypes["sched_current"];
-  sched_history: ResponseTypes["sched_history"];
-  sched_next: ResponseTypes["sched_next"];
-  user: ResponseTypes["user"];
-}
+export const ALL_RESPONSE_KEYS: Array<keyof ResponseTypes> = [
+  "album",
+  "all_albums_by_cursor",
+  "all_artists",
+  "all_faves",
+  "all_groups",
+  "all_songs",
+  "all_stations_info",
+  "already_voted",
+  "artist",
+  "build_version",
+  "cookie_domain",
+  "delete_request_result",
+  "error_report_result",
+  "error",
+  "fave_album_result",
+  "fave_all_songs_result",
+  "fave_song_result",
+  "group",
+  "listener",
+  "live_voting",
+  "locale",
+  "locales",
+  "mobile",
+  "on_draw",
+  "on_init",
+  "on_measure",
+  "pause_request_queue_result",
+  "playback_history",
+  "rate_result",
+  "redownload_m3u",
+  "relays",
+  "request_favorited_songs_result",
+  "request_line_result",
+  "request_line",
+  "request_result",
+  "request_unrated_songs_result",
+  "requests",
+  "sched_current",
+  "sched_history",
+  "sched_next",
+  "search_results",
+  "song",
+  "station_list",
+  "station_song_count",
+  "stations",
+  "stream_filename",
+  "top_100",
+  "unpause_request_queue_result",
+  "unrated_songs",
+  "user_info_result",
+  "user_recent_votes",
+  "user_requested_history",
+  "user",
+  "vote_result",
+  "websocket_host",
+];
