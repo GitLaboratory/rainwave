@@ -1,7 +1,7 @@
 import User from "./types/user";
 
 export interface RainwaveResponseTypes {
-  album: unknown;
+  album: 2;
   all_albums_by_cursor: unknown;
   all_artists: unknown;
   all_faves: unknown;

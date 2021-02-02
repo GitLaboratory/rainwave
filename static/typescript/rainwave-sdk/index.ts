@@ -113,9 +113,9 @@ export default class Rainwave {
     this.#listeners[event] = oopsiePookums;
   }
 
-  public emit(
-    event: RainwaveResponseKey,
-    data: RainwaveResponseTypes[RainwaveResponseKey]
+  public emit<K extends RainwaveResponseKey>(
+    event: K,
+    data: RainwaveResponseTypes[K]
   ): void {
     const listeners = this.#listeners[event];
     listeners.forEach((listener) => listener(data));
