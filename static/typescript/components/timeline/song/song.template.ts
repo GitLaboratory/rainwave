@@ -1,7 +1,7 @@
 import $l from "templateHelpers/gettext";
 import rating, { RatingTemplate } from "components/rating/rating.template";
 import fave, { FaveTemplate } from "components/fave/fave.template";
-import Song from "types/song";
+import Song from "rainwave-sdk/types/song";
 import Sizing from "types/sizing";
 
 export interface SongTemplate {

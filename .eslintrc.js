@@ -50,7 +50,7 @@ module.exports = {
       },
       {
         selector: "typeLike",
-        format: ["PascalCase"],
+        format: ["PascalCase", "snake_case"],
       },
       {
         selector: "typeParameter",
@@ -60,8 +60,12 @@ module.exports = {
         selector: "typeProperty",
         format: ["camelCase", "snake_case", "UPPER_CASE"],
       },
+      {
+        selector: "objectLiteralProperty",
+        format: null,
+      },
     ],
-    "@typescript-eslint/no-empty-function": "error",
+    "@typescript-eslint/no-empty-function": "off",
     "@typescript-eslint/no-empty-interface": "off",
     "@typescript-eslint/no-explicit-any": "error",
     "@typescript-eslint/no-floating-promises": "error",
@@ -95,7 +99,7 @@ module.exports = {
     curly: "error",
     eqeqeq: "error",
     "import/first": "error",
-    "import/group-exports": "error",
+    "import/group-exports": "off",
     "import/no-default-export": "off",
     "import/no-duplicates": "error",
     "import/no-named-default": "error",
