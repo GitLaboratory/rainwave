@@ -15,7 +15,7 @@ interface AlbumRequest extends BaseRequest {
   params: {
     id: number;
     sort?: "added_on";
-    allCategories: false;
+    allCategories?: false;
   };
 }
 
@@ -26,7 +26,7 @@ interface AllAlbumsByCursorRequest extends BaseRequest {
 interface AllArtistsRequest extends BaseRequest {
   response: { all_artists: RainwaveResponseTypes["all_artists"] };
   params: {
-    noSearchable: true;
+    noSearchable?: true;
   };
 }
 
@@ -38,8 +38,8 @@ interface AllFavesRequest extends BaseRequest {
 interface AllGroupsRequest extends BaseRequest {
   response: { all_groups: RainwaveResponseTypes["all_groups"] };
   params: {
-    noSearchable: true;
-    all: false;
+    noSearchable?: true;
+    all?: false;
   };
 }
 

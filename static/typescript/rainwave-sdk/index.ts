@@ -13,7 +13,7 @@ interface RainwaveOptions {
   url: string;
   debug: (msg: string | Error) => void;
   maxRetries: number;
-  onSocketError: (error: Error) => void;
+  onSocketError: (event: Event) => void;
 }
 
 const PING_INTERVAL = 20000;
@@ -23,118 +23,124 @@ const STATELESS_REQUESTS = ["ping", "pong"];
 const MAX_QUEUED_REQUESTS = 10;
 const SINGLE_REQUEST_TIMEOUT = 4000;
 
-export default class Rainwave extends RainwaveEventListener<RainwaveResponseTypes> {
-  #userId: number;
-  #apiKey: string;
-  #sid: Station;
-  #url: string;
-  #debug: (msg: string) => void;
-  #onSocketError: (error: Error) => void;
-  #socket?: WebSocket;
-  #isOk?: boolean = false;
-  #isOkTimer: number | null = null;
-  #pingInterval: number | null = null;
-  #socketOpped: boolean = false;
-  #socketStaysClosed: boolean = false;
-  #maxRetries: number;
-  #socketNoops: number = 0;
-  #socketIsBusy: boolean = false;
+export default class Rainwave<
+  K extends keyof RainwaveRequests
+> extends RainwaveEventListener<RainwaveResponseTypes> {
+  private _userId: number;
+  private _apiKey: string;
+  private _sid: Station;
+  private _url: string;
+  private _debug: (msg: string) => void;
+  private _userOnSocketError: (event: Event) => void;
+  private _socket?: WebSocket;
+  private _isOk?: boolean = false;
+  private _isOkTimer: number | null = null;
+  private _pingInterval: number | null = null;
+  private _socketOpped: boolean = false;
+  private _socketStaysClosed: boolean = false;
+  private _maxRetries: number;
+  private _socketNoops: number = 0;
+  private _socketIsBusy: boolean = false;
 
-  #currentScheduleId: number | undefined;
-  #requestId: number = 0;
-  #requestQueue: RainwaveRequest<keyof RainwaveRequests>[] = [];
-  #sentRequests: RainwaveRequest<keyof RainwaveRequests>[] = [];
+  private _currentScheduleId: number | undefined;
+  private _requestId: number = 0;
+  private _requestQueue: RainwaveRequest<K>[] = [];
+  private _sentRequests: RainwaveRequest<K>[] = [];
 
   constructor(
     options: Partial<RainwaveOptions> &
       Pick<RainwaveOptions, "userId" | "apiKey" | "sid">
   ) {
     super(ALL_RAINWAVE_RESPONSE_KEYS);
-    this.#userId = options.userId;
-    this.#apiKey = options.apiKey;
-    this.#sid = options.sid;
-    this.#url = options.url || "wss://rainwave.cc/api4/websocket/";
-    this.#debug = options?.debug || ((): void => {});
-    this.#maxRetries = options?.maxRetries ?? 0;
-    this.#onSocketError = options?.onSocketError || ((): void => {});
+
+    this._userId = options.userId;
+    this._apiKey = options.apiKey;
+    this._sid = options.sid;
+    this._url = options.url || "wss://rainwave.cc/api4/websocket/";
+    this._debug = options?.debug || ((): void => {});
+    this._maxRetries = options?.maxRetries ?? 0;
+    this._userOnSocketError = options?.onSocketError || ((): void => {});
+
+    this.on("wsok", this._onSocketOK.bind(this));
+    this.on("wserror", this._onSocketFailure.bind(this));
+    this.on("ping", this._onPing.bind(this));
   }
 
   private _getNextRequestId(): number {
-    this.#requestId += 1;
-    return this.#requestId;
+    this._requestId += 1;
+    return this._requestId;
   }
 
   // Socket Functions **************************************************************************************
 
   private _socketSend(message: unknown): void {
-    if (!this.#socket) {
+    if (!this._socket) {
       throw new RainwaveSDKUsageError("Attempted to send to a disconnected socket.");
     }
     let jsonmsg: string;
     try {
       jsonmsg = JSON.stringify(message);
-    } catch (exc) {
-      this.emit("sdk_exception", exc);
+    } catch (error) {
+      this.emit("sdk_exception", error);
       return;
     }
     try {
-      this.#socket.send(jsonmsg);
-    } catch (exc) {
-      this.emit("sdk_socket_error", exc);
-      this._onSocketError();
+      this._socket.send(jsonmsg);
+    } catch (error) {
+      this.emit("sdk_exception", error);
     }
   }
 
   public startWebsocketSync(): void {
-    if (this.#socket?.readyState === WebSocket.OPEN) {
+    if (this._socket?.readyState === WebSocket.OPEN) {
       return;
     }
 
-    if (this.#isOkTimer) {
-      clearTimeout(this.#isOkTimer);
+    if (this._isOkTimer) {
+      clearTimeout(this._isOkTimer);
     }
-    this.#isOkTimer = setTimeout(
+    this._isOkTimer = setTimeout(
       this._websocketCheck.bind(this),
       WEBSOCKET_CHECK_TIMEOUT_MS
     );
 
-    const socket = new WebSocket(`${this.#url}/websocket/${this.#sid}`);
+    const socket = new WebSocket(`${this._url}/websocket/${this._sid}`);
     socket.addEventListener("message", this._onMessage.bind(this));
     socket.addEventListener("close", this._onSocketClose.bind(this));
     socket.addEventListener("error", this._onSocketError.bind(this));
     socket.addEventListener("open", () => {
-      this.#debug("Socket open.");
-      this.#socketOpped = false;
+      this._debug("Socket open.");
+      this._socketOpped = false;
       this._socketSend({
         action: "auth",
-        user_id: this.#userId,
-        key: this.#apiKey,
+        user_id: this._userId,
+        key: this._apiKey,
       });
     });
   }
 
   private _websocketCheck(): void {
-    this.#debug("Couldn't appear to connect.");
+    this._debug("Couldn't appear to connect.");
     this._forceReconnect();
   }
 
   private _cleanVariablesOnClose(): void {
-    this.#isOk = false;
-    if (this.#isOkTimer) {
-      clearTimeout(this.#isOkTimer);
-      this.#isOkTimer = null;
+    this._isOk = false;
+    if (this._isOkTimer) {
+      clearTimeout(this._isOkTimer);
+      this._isOkTimer = null;
     }
-    if (this.#pingInterval) {
-      clearInterval(this.#pingInterval);
-      this.#pingInterval = null;
+    if (this._pingInterval) {
+      clearInterval(this._pingInterval);
+      this._pingInterval = null;
     }
   }
 
   public stopWebsocketSync(): void {
     if (
-      !this.#socket ||
-      this.#socket.readyState === WebSocket.CLOSING ||
-      this.#socket.readyState === WebSocket.CLOSED
+      !this._socket ||
+      this._socket.readyState === WebSocket.CLOSING ||
+      this._socket.readyState === WebSocket.CLOSED
     ) {
       return;
     }
@@ -142,49 +148,50 @@ export default class Rainwave extends RainwaveEventListener<RainwaveResponseType
     // sometimes depending on browser condition, onSocketClose won't get called for a while.
     // therefore it's important to clean here *and* in onSocketClose.
     this._cleanVariablesOnClose();
-    this.#socketStaysClosed = true;
-    this.#socket.close();
-    this.#debug("Socket closed.");
+    this._socketStaysClosed = true;
+    this._socket.close();
+    this._debug("Socket closed.");
   }
 
-  private _onSocketClose(): void {
-    if (this.#socketStaysClosed) {
+  private _onSocketClose(event: Event): void {
+    if (this._socketStaysClosed) {
       return;
     }
 
-    this.#debug("Socket was closed.");
+    this._debug("Socket was closed.");
 
-    if (!this.#socketOpped) {
-      this.#socketNoops += 1;
-      if (this.#maxRetries > 0 && this.#socketNoops >= this.#maxRetries) {
-        this._onSocketError();
+    if (!this._socketOpped) {
+      this._socketNoops += 1;
+      if (this._maxRetries > 0 && this._socketNoops >= this._maxRetries) {
+        this._onSocketError(event);
       }
     }
 
     setTimeout(this.startWebsocketSync.bind(this), DEFAULT_RECONNECT_TIMEOUT);
   }
 
-  private _onSocketError(): void {
-    this.#debug(`Socket errored out, retrying.`);
+  private _onSocketError(event: Event): void {
+    this._debug(`Socket errored out, retrying.`);
     this.emit("error", { code: 0, tl_key: "sync_retrying", text: "" });
+    this._userOnSocketError(event);
   }
 
   private _onSocketOK(): void {
-    this.#debug("wsok received - auth was good!");
+    this._debug("wsok received - auth was good!");
     this.emit("sdk_error_clear", { tl_key: "sync_retrying" });
-    this.#isOk = true;
+    this._isOk = true;
 
-    if (!this.#pingInterval) {
-      this.#pingInterval = setInterval(this._ping.bind(this), PING_INTERVAL);
+    if (!this._pingInterval) {
+      this._pingInterval = setInterval(this._ping.bind(this), PING_INTERVAL);
     }
 
-    if (this.#currentScheduleId) {
-      this.#debug(
-        `Socket send - check_sched_current_id with ${this.#currentScheduleId}`
+    if (this._currentScheduleId) {
+      this._debug(
+        `Socket send - check_sched_current_id with ${this._currentScheduleId}`
       );
       this._socketSend({
         action: "check_sched_current_id",
-        sched_id: this.#currentScheduleId,
+        sched_id: this._currentScheduleId,
       });
     }
 
@@ -193,7 +200,7 @@ export default class Rainwave extends RainwaveEventListener<RainwaveResponseType
 
   private _onSocketFailure(error: RainwaveError): void {
     if (error.tl_key === "auth_failed") {
-      this.#debug(
+      this._debug(
         "Authorization failed for Rainwave websocket.  Wrong API key/user ID combo."
       );
       this.emit("error", error);
@@ -204,64 +211,64 @@ export default class Rainwave extends RainwaveEventListener<RainwaveResponseType
   // Error Handling ****************************************************************************************
 
   private _closeSocket(): void {
-    if (this.#socket) {
-      this.#socket.close();
+    if (this._socket) {
+      this._socket.close();
     }
   }
 
   private _forceReconnect(): void {
-    if (this.#socketStaysClosed) {
+    if (this._socketStaysClosed) {
       return;
     }
-    this.#debug("Forcing socket reconnect.");
+    this._debug("Forcing socket reconnect.");
     this._closeSocket();
   }
 
   // Ping and Pong *****************************************************************************************
 
   private _ping(): void {
-    this.#debug("Pinging server.");
+    this._debug("Pinging server.");
     this._socketSend("ping");
   }
 
   private _onPing(): void {
-    this.#debug("Server ping.");
+    this._debug("Server ping.");
     this._socketSend("pong");
   }
 
   // Data From API *****************************************************************************************
 
   private _onMessage(message: { data: string }): void {
-    this.#socketOpped = true;
-    this.#socketNoops = 0;
+    this._socketOpped = true;
+    this._socketNoops = 0;
     this.emit("sdk_error_clear", { tl_key: "sync_retrying" });
-    if (this.#isOkTimer) {
-      clearTimeout(this.#isOkTimer);
-      this.#isOkTimer = null;
+    if (this._isOkTimer) {
+      clearTimeout(this._isOkTimer);
+      this._isOkTimer = null;
     }
 
     let json: Partial<RainwaveResponseTypes>;
     try {
       json = JSON.parse(message.data) as Partial<RainwaveResponseTypes>;
-    } catch (exc) {
-      this.#debug(JSON.stringify(message));
-      this.#debug(exc);
+    } catch (error) {
+      this._debug(JSON.stringify(message));
+      this._debug(error);
       this._closeSocket();
       return;
     }
 
     if (!json) {
-      this.#debug(JSON.stringify(message));
-      this.#debug("Response from Rainwave API was blank!");
+      this._debug(JSON.stringify(message));
+      this._debug("Response from Rainwave API was blank!");
       this._closeSocket();
     }
 
-    const matchingSentRequest = this.#sentRequests.find(
+    const matchingSentRequest = this._sentRequests.find(
       (rq) => rq.messageId === json.message_id
     );
 
     if (matchingSentRequest) {
-      this.#sentRequests = this.#sentRequests.filter(
+      this._sentRequests = this._sentRequests.filter(
         (rq) => rq.messageId !== json.message_id
       );
       if (json.error) {
@@ -285,59 +292,59 @@ export default class Rainwave extends RainwaveEventListener<RainwaveResponseType
 
   // Calls To API ******************************************************************************************
 
-  private _request<T extends keyof RainwaveRequests>(
-    action: T,
-    params: RainwaveRequests[T]["params"],
-    resolve: (data: RainwaveRequests[T]["response"]) => void,
+  private _request(
+    action: K,
+    params: RainwaveRequests[K]["params"],
+    resolve: (data: RainwaveRequests[K]["response"]) => void,
     reject: (error: RainwaveResponseTypes["error"]) => void
   ): void {
     if (!action) {
       throw "No action specified for Rainwave API request.";
     }
-    const request = new RainwaveRequest<T>(action, params, resolve, reject);
-    if (STATELESS_REQUESTS.indexOf(action) !== -1 || !this.#isOk) {
-      this.#requestQueue = this.#requestQueue.filter((rq) => rq.action !== action);
+    const request = new RainwaveRequest<K>(action, params, resolve, reject);
+    if (STATELESS_REQUESTS.indexOf(action) !== -1 || !this._isOk) {
+      this._requestQueue = this._requestQueue.filter((rq) => rq.action !== action);
     }
-    this.#requestQueue.push(request);
-    if (!this.#socketIsBusy && this.#isOk) {
+    this._requestQueue.push(request);
+    if (!this._socketIsBusy && this._isOk) {
       this._nextRequest();
     }
   }
 
   private _nextRequest(): void {
-    const request = this.#requestQueue.shift();
+    const request = this._requestQueue.shift();
 
     if (!request) {
-      this.#socketIsBusy = false;
+      this._socketIsBusy = false;
       return;
     }
-    if (!this.#isOk) {
+    if (!this._isOk) {
       return;
     }
 
     if (STATELESS_REQUESTS.indexOf(request.action) === -1) {
       request.messageId = this._getNextRequestId();
-      if (this.#sentRequests.length > MAX_QUEUED_REQUESTS) {
-        this.#sentRequests.splice(0, this.#sentRequests.length - MAX_QUEUED_REQUESTS);
+      if (this._sentRequests.length > MAX_QUEUED_REQUESTS) {
+        this._sentRequests.splice(0, this._sentRequests.length - MAX_QUEUED_REQUESTS);
       }
     }
 
-    if (this.#isOkTimer) {
-      clearTimeout(this.#isOkTimer);
+    if (this._isOkTimer) {
+      clearTimeout(this._isOkTimer);
     }
-    this.#isOkTimer = setTimeout(() => {
+    this._isOkTimer = setTimeout(() => {
       this._onRequestTimeout(request);
     }, SINGLE_REQUEST_TIMEOUT);
 
-    this._socketSend(request.apiMessage(this.#sid));
-    this.#sentRequests.push(request);
+    this._socketSend(request.apiMessage(this._sid));
+    this._sentRequests.push(request);
   }
 
-  private _onRequestTimeout(request: RainwaveRequest<keyof RainwaveRequests>): void {
-    if (this.#isOkTimer) {
-      this.#isOkTimer = null;
-      this.#requestQueue.unshift(request);
-      this.#debug("Looks like the connection timed out.");
+  private _onRequestTimeout(request: RainwaveRequest<K>): void {
+    if (this._isOkTimer) {
+      this._isOkTimer = null;
+      this._requestQueue.unshift(request);
+      this._debug("Looks like the connection timed out.");
       this.emit("error", { code: 0, text: "", tl_key: "sync_retrying" });
       this._forceReconnect();
     }
@@ -376,13 +383,13 @@ export default class Rainwave extends RainwaveEventListener<RainwaveResponseType
 
   // API calls ***********************************************************************************************
 
-  // public async album(
-  //   id: number,
-  //   sort: "added_on" | undefined = undefined,
-  //   allCategories?: boolean = true
-  // ): Promise<RainwaveResponseTypes["album"]> {
-  //   return Promise.reject("unimplemented");
-  // }
+  album(
+    options: RainwaveRequests["album"]["params"]
+  ): Promise<RainwaveRequests["album"]["response"]> {
+    return new Promise((resolve, reject) => {
+      this._request("album", options, resolve, reject);
+    });
+  }
 
   // public async allAlbums(): Promise<RainwaveResponseTypes["all_albums_by_cursor"]> {
   //   return Promise.reject("unimplemented");

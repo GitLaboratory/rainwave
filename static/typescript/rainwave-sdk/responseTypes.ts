@@ -36,6 +36,7 @@ export interface RainwaveResponseTypes {
   on_init: unknown;
   on_measure: unknown;
   pause_request_queue_result: unknown;
+  ping: undefined;
   playback_history: unknown;
   rate_result: unknown;
   redownload_m3u: unknown;
@@ -52,7 +53,6 @@ export interface RainwaveResponseTypes {
   sdk_exception: Error;
   sdk_error_clear: RainwaveSDKErrorClear;
   sdk_schedule_synced: true;
-  sdk_socket_error: Error;
   search_results: unknown;
   song: unknown;
   station_list: unknown;
@@ -69,6 +69,8 @@ export interface RainwaveResponseTypes {
   user: User;
   vote_result: unknown;
   websocket_host: unknown;
+  wsok: true;
+  wserror: RainwaveError;
 }
 
 export const ALL_RAINWAVE_RESPONSE_KEYS: Array<keyof RainwaveResponseTypes> = [
@@ -115,7 +117,6 @@ export const ALL_RAINWAVE_RESPONSE_KEYS: Array<keyof RainwaveResponseTypes> = [
   "sdk_exception",
   "sdk_error_clear",
   "sdk_schedule_synced",
-  "sdk_socket_error",
   "search_results",
   "song",
   "station_list",
