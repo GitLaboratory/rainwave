@@ -1,9 +1,15 @@
-import Album from "./album";
-import User from "./user";
+import Album from "./types/album";
+import RainwaveError from "./types/error";
+import RainwaveSDKErrorClear from "./types/errorClear";
+import User from "./types/user";
+
+export interface RainwaveSocketMessage {
+  data: string;
+}
 
 export interface RainwaveResponseTypes {
   album: Album;
-  all_albums_by_cursor: 1;
+  all_albums_by_cursor: unknown;
   all_artists: unknown;
   all_faves: unknown;
   all_groups: unknown;
@@ -15,7 +21,7 @@ export interface RainwaveResponseTypes {
   cookie_domain: unknown;
   delete_request_result: unknown;
   error_report_result: unknown;
-  error: unknown;
+  error: RainwaveError;
   fave_album_result: unknown;
   fave_all_songs_result: unknown;
   fave_song_result: unknown;
@@ -24,6 +30,7 @@ export interface RainwaveResponseTypes {
   live_voting: unknown;
   locale: unknown;
   locales: unknown;
+  message_id: number;
   mobile: unknown;
   on_draw: unknown;
   on_init: unknown;
@@ -42,12 +49,17 @@ export interface RainwaveResponseTypes {
   sched_current: unknown;
   sched_history: unknown;
   sched_next: unknown;
+  sdk_exception: Error;
+  sdk_error_clear: RainwaveSDKErrorClear;
+  sdk_schedule_synced: true;
+  sdk_socket_error: Error;
   search_results: unknown;
   song: unknown;
   station_list: unknown;
   station_song_count: unknown;
   stations: unknown;
   stream_filename: unknown;
+  sync_result: RainwaveError;
   top_100: unknown;
   unpause_request_queue_result: unknown;
   unrated_songs: unknown;
@@ -59,9 +71,7 @@ export interface RainwaveResponseTypes {
   websocket_host: unknown;
 }
 
-export type RainwaveResponseKey = keyof RainwaveResponseTypes;
-
-export const ALL_RAINWAVE_RESPONSE_KEYS: Array<RainwaveResponseKey> = [
+export const ALL_RAINWAVE_RESPONSE_KEYS: Array<keyof RainwaveResponseTypes> = [
   "album",
   "all_albums_by_cursor",
   "all_artists",
@@ -102,6 +112,10 @@ export const ALL_RAINWAVE_RESPONSE_KEYS: Array<RainwaveResponseKey> = [
   "sched_current",
   "sched_history",
   "sched_next",
+  "sdk_exception",
+  "sdk_error_clear",
+  "sdk_schedule_synced",
+  "sdk_socket_error",
   "search_results",
   "song",
   "station_list",

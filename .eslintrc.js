@@ -72,15 +72,6 @@ module.exports = {
     "@typescript-eslint/no-for-in-array": "error",
     "@typescript-eslint/no-implied-eval": "error",
     "@typescript-eslint/no-inferrable-types": "off",
-    "@typescript-eslint/no-magic-numbers": [
-      "error",
-      {
-        ignore: [0, 1, -1, 100],
-        ignoreReadonlyClassProperties: true,
-        ignoreEnums: true,
-        ignoreNumericLiteralTypes: true,
-      },
-    ],
     "@typescript-eslint/no-misused-promises": "error",
     "@typescript-eslint/no-non-null-assertion": "error",
     "@typescript-eslint/no-unnecessary-type-assertion": "error",
