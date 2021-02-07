@@ -1,5 +1,5 @@
 import { Album } from "./album";
-import { Artist } from "./artist";
+import { ArtistOnSong } from "./artistOnSong";
 import { ElectionSongType } from "./electionSongType";
 import { SongGroup } from "./songGroup";
 import { Station } from "./station";
@@ -7,7 +7,7 @@ import { Station } from "./station";
 export interface Song {
   albums: [Pick<Album, "id" | "rating" | "art" | "name" | "rating_user" | "fave">];
   artist_parseable: string;
-  artists: Artist[];
+  artists: ArtistOnSong[];
   cool: boolean;
   disc_number: number | null;
   elec_blocked_by: boolean;

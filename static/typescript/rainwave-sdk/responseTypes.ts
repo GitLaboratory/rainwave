@@ -1,20 +1,29 @@
-import Album from "./types/album";
+import AlbumWithDetail from "./types/albumWithDetail";
+import AllSongsSong from "./types/allSongsSong";
+import AllStationsInfo from "./types/allStationsInfo";
+import ApiInfo from "./types/apiInfo";
+import ArtistInLibrary from "./types/artistInLibrary";
+import ArtistWithSongs from "./types/artistWithSongs";
 import RainwaveError from "./types/error";
 import RainwaveSDKErrorClear from "./types/errorClear";
+import FaveSong from "./types/faveSong";
+import MessageId from "./types/messageId";
+import SongGroup from "./types/songGroup";
 import User from "./types/user";
 
 export interface RainwaveResponseTypes {
-  album: Album;
+  album: AlbumWithDetail;
   all_albums_by_cursor: unknown;
-  all_artists: unknown;
-  all_faves: unknown;
-  all_groups: unknown;
-  all_songs: unknown;
-  all_stations_info: unknown;
+  all_artists: ArtistInLibrary[];
+  all_faves: FaveSong[];
+  all_groups: SongGroup[];
+  all_songs: AllSongsSong[];
+  all_stations_info: AllStationsInfo[];
   already_voted: unknown;
-  artist: unknown;
-  build_version: unknown;
-  cookie_domain: unknown;
+  api_info: ApiInfo;
+  artist: ArtistWithSongs;
+  build_version: number;
+  cookie_domain: string;
   delete_request_result: unknown;
   error_report_result: unknown;
   error: RainwaveError;
@@ -26,7 +35,7 @@ export interface RainwaveResponseTypes {
   live_voting: unknown;
   locale: unknown;
   locales: unknown;
-  message_id: number;
+  message_id: MessageId;
   mobile: unknown;
   on_draw: unknown;
   on_init: unknown;
