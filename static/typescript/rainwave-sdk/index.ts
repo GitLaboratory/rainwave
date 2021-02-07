@@ -2,7 +2,7 @@ import { RainwaveSDKUsageError } from "./errors";
 import RainwaveEventListener from "./eventListener";
 import RainwaveRequest from "./request";
 import { RainwaveRequests } from "./requestTypes";
-import { ALL_RAINWAVE_RESPONSE_KEYS, RainwaveResponseTypes } from "./responseTypes";
+import { RainwaveResponseTypes } from "./responseTypes";
 import RainwaveError from "./types/error";
 import Station from "./types/station";
 
@@ -23,9 +23,7 @@ const STATELESS_REQUESTS = ["ping", "pong"];
 const MAX_QUEUED_REQUESTS = 10;
 const SINGLE_REQUEST_TIMEOUT = 4000;
 
-export default class Rainwave<
-  K extends keyof RainwaveRequests
-> extends RainwaveEventListener<RainwaveResponseTypes> {
+export default class Rainwave extends RainwaveEventListener<RainwaveResponseTypes> {
   private _userId: number;
   private _apiKey: string;
   private _sid: Station;
@@ -44,14 +42,14 @@ export default class Rainwave<
 
   private _currentScheduleId: number | undefined;
   private _requestId: number = 0;
-  private _requestQueue: RainwaveRequest<K>[] = [];
-  private _sentRequests: RainwaveRequest<K>[] = [];
+  private _requestQueue: RainwaveRequest<keyof RainwaveRequests>[] = [];
+  private _sentRequests: RainwaveRequest<keyof RainwaveRequests>[] = [];
 
   constructor(
     options: Partial<RainwaveOptions> &
       Pick<RainwaveOptions, "userId" | "apiKey" | "sid">
   ) {
-    super(ALL_RAINWAVE_RESPONSE_KEYS);
+    super();
 
     this._userId = options.userId;
     this._apiKey = options.apiKey;
@@ -292,18 +290,11 @@ export default class Rainwave<
 
   // Calls To API ******************************************************************************************
 
-  private _request(
-    action: K,
-    params: RainwaveRequests[K]["params"],
-    resolve: (data: RainwaveRequests[K]["response"]) => void,
-    reject: (error: RainwaveResponseTypes["error"]) => void
-  ): void {
-    if (!action) {
-      throw "No action specified for Rainwave API request.";
-    }
-    const request = new RainwaveRequest<K>(action, params, resolve, reject);
-    if (STATELESS_REQUESTS.indexOf(action) !== -1 || !this._isOk) {
-      this._requestQueue = this._requestQueue.filter((rq) => rq.action !== action);
+  private _request(request: RainwaveRequest<keyof RainwaveRequests>): void {
+    if (STATELESS_REQUESTS.indexOf(request.action) !== -1 || !this._isOk) {
+      this._requestQueue = this._requestQueue.filter(
+        (rq) => rq.action !== request.action
+      );
     }
     this._requestQueue.push(request);
     if (!this._socketIsBusy && this._isOk) {
@@ -340,7 +331,7 @@ export default class Rainwave<
     this._sentRequests.push(request);
   }
 
-  private _onRequestTimeout(request: RainwaveRequest<K>): void {
+  private _onRequestTimeout(request: RainwaveRequest<keyof RainwaveRequests>): void {
     if (this._isOkTimer) {
       this._isOkTimer = null;
       this._requestQueue.unshift(request);
@@ -384,175 +375,519 @@ export default class Rainwave<
   // API calls ***********************************************************************************************
 
   album(
-    options: RainwaveRequests["album"]["params"]
+    params: RainwaveRequests["album"]["params"]
   ): Promise<RainwaveRequests["album"]["response"]> {
     return new Promise((resolve, reject) => {
-      this._request("album", options, resolve, reject);
+      this._request(
+        new RainwaveRequest(
+          "album",
+          params,
+          (data) => resolve(data as RainwaveRequests["album"]["response"]),
+          reject
+        )
+      );
     });
   }
 
-  // public async allAlbums(): Promise<RainwaveResponseTypes["all_albums_by_cursor"]> {
-  //   return Promise.reject("unimplemented");
-  // }
+  allAlbumsByCursor(): Promise<RainwaveRequests["all_albums_by_cursor"]["response"]> {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "all_albums_by_cursor",
+          { noSearchable: true },
+          (data) =>
+            resolve(data as RainwaveRequests["all_albums_by_cursor"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 
-  // public async allArtists(noSearchable = true): Promise<RainwaveResponseTypes["all_artists"]> {
-  //   return Promise.reject("unimplemented");
-  // }
+  allArtists(): Promise<RainwaveRequests["all_artists"]["response"]> {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "all_artists",
+          { noSearchable: true },
+          (data) => resolve(data as RainwaveRequests["all_artists"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 
-  // public async allFaves(): Promise<RainwaveResponseTypes["all_faves"]> {
-  //   // standard paged
-  // }
+  allFaves(): Promise<RainwaveRequests["all_faves"]["response"]> {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "all_faves",
+          {},
+          (data) => resolve(data as RainwaveRequests["all_faves"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 
-  // public async allGroups(
-  //   noSearchable = true,
-  //   all = False
-  // ): Promise<RainwaveResponseTypes["all_groups"]> {
-  //   return Promise.reject("unimplemented");
-  // }
+  allGroups(): Promise<RainwaveRequests["all_groups"]["response"]> {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "all_groups",
+          { noSearchable: true },
+          (data) => resolve(data as RainwaveRequests["all_groups"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 
-  // public async allSongs(
-  //   order: "rating" | undefined = undefined
-  // ): Promise<RainwaveResponseTypes["all_songs"]> {
-  //   // standard paged
-  // }
+  allSongs(
+    params: RainwaveRequests["all_songs"]["params"]
+  ): Promise<RainwaveRequests["all_songs"]["response"]> {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "all_songs",
+          params,
+          (data) => resolve(data as RainwaveRequests["all_songs"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 
-  // public async artist(id: number): Promise<RainwaveResponseTypes["artist"]> {
-  //   return Promise.reject("unimplemented");
-  // }
+  artist(
+    params: RainwaveRequests["artist"]["params"]
+  ): Promise<RainwaveRequests["artist"]["response"]> {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "artist",
+          params,
+          (data) => resolve(data as RainwaveRequests["artist"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 
-  // public async clearRating(songId: number): Promise<RainwaveResponseTypes["rate_result"]> {
-  //   return Promise.reject("unimplemented");
-  // }
+  clearRating(
+    params: RainwaveRequests["clear_rating"]["params"]
+  ): Promise<RainwaveRequests["clear_rating"]["response"]> {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "clear_rating",
+          params,
+          (data) => resolve(data as RainwaveRequests["clear_rating"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 
-  // public async clearRequests(): Promise<RainwaveResponseTypes["requests"]> {
-  //   return Promise.reject("unimplemented");
-  // }
+  clearRequests(): Promise<RainwaveRequests["clear_requests"]["response"]> {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "clear_requests",
+          {},
+          (data) => resolve(data as RainwaveRequests["clear_requests"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 
-  // public async clearRequestsOnCooldown(): Promise<RainwaveResponseTypes["requests"]> {
-  //   return Promise.reject("unimplemented");
-  // }
+  clearRequestsOnCooldown(): Promise<
+    RainwaveRequests["clear_requests_on_cooldown"]["response"]
+  > {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "clear_requests_on_cooldown",
+          {},
+          (data) =>
+            resolve(data as RainwaveRequests["clear_requests_on_cooldown"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 
-  // public async deleteRequest(songId: number): Promise<RainwaveResponseTypes["requests"]> {
-  //   return Promise.reject("unimplemented");
-  // }
+  deleteRequest(
+    params: RainwaveRequests["delete_request"]["params"]
+  ): Promise<RainwaveRequests["delete_request"]["response"]> {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "delete_requests",
+          params,
+          (data) => resolve(data as RainwaveRequests["delete_request"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 
-  // public async faveAlbum(
-  //   albumId: number,
-  //   fave: boolean
-  // ): Promise<RainwaveResponseTypes["fave_album_result"]> {
-  //   return Promise.reject("unimplemented");
-  // }
+  faveAlbum(
+    params: RainwaveRequests["fave_album"]["params"]
+  ): Promise<RainwaveRequests["fave_album"]["response"]> {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "fave_album",
+          params,
+          (data) => resolve(data as RainwaveRequests["fave_album"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 
-  // public async faveAllSongs(
-  //   albumId: number,
-  //   fave: boolean
-  // ): Promise<RainwaveResponseTypes["fave_all_songs_result"]> {
-  //   return Promise.reject("unimplemented");
-  // }
+  faveAllSongs(
+    params: RainwaveRequests["fave_all_songs"]["params"]
+  ): Promise<RainwaveRequests["fave_all_songs"]["response"]> {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "fave_all_songs",
+          params,
+          (data) => resolve(data as RainwaveRequests["fave_all_songs"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 
-  // public async faveSong(
-  //   songId: number,
-  //   fave: boolean
-  // ): Promise<RainwaveResponseTypes["fave_song_result"]> {
-  //   return Promise.reject("unimplemented");
-  // }
+  faveSong(
+    params: RainwaveRequests["fave_song"]["params"]
+  ): Promise<RainwaveRequests["fave_song"]["response"]> {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "fave_song",
+          params,
+          (data) => resolve(data as RainwaveRequests["fave_song"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 
-  // public async group(id: number): Promise<RainwaveResponseTypes["group"]> {
-  //   return Promise.reject("unimplemented");
-  // }
+  group(
+    params: RainwaveRequests["group"]["params"]
+  ): Promise<RainwaveRequests["group"]["response"]> {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "group",
+          params,
+          (data) => resolve(data as RainwaveRequests["group"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 
-  // public async infoAll(): Promise<RainwaveResponseTypes["all_stations_info"]> {
-  //   return Promise.reject("unimplemented");
-  // }
+  infoAll(): Promise<RainwaveRequests["info_all"]["response"]> {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "info_all",
+          {},
+          (data) => resolve(data as RainwaveRequests["info_all"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 
-  // public async listener(id: number): Promise<RainwaveResponseTypes["listener"]> {
-  //   return Promise.reject("unimplemented");
-  // }
+  listener(
+    params: RainwaveRequests["listener"]["params"]
+  ): Promise<RainwaveRequests["listener"]["response"]> {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "listener",
+          params,
+          (data) => resolve(data as RainwaveRequests["listener"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 
-  // public async orderRequests(order: number[]): Promise<RainwaveResponseTypes["requests"]> {
-  //   return Promise.reject("unimplemented");
-  // }
+  orderRequests(
+    params: RainwaveRequests["order_requests"]["params"]
+  ): Promise<RainwaveRequests["order_requests"]["response"]> {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "order_requests",
+          params,
+          (data) => resolve(data as RainwaveRequests["order_requests"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 
-  // public async pauseRequestQueue(): Promise<
-  //   RainwaveResponseTypes["pause_request_queue_result"]
-  // > {
-  //   return Promise.reject("unimplemented");
-  // }
+  pauseRequestQueue(): Promise<RainwaveRequests["pause_request_queue"]["response"]> {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "pause_request_queue",
+          {},
+          (data) =>
+            resolve(data as RainwaveRequests["pause_request_queue"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 
-  // public async playbackHistory(): Promise<RainwaveResponseTypes["playback_history"]> {
-  //   return Promise.reject("unimplemented");
-  // }
+  playbackHistory(): Promise<RainwaveRequests["playback_history"]["response"]> {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "playback_history",
+          {},
+          (data) => resolve(data as RainwaveRequests["playback_history"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 
-  // public async rate(
-  //   songId: number,
-  //   rating: 1.0 | 1.5 | 2.0 | 2.5 | 3.0 | 4.5 | 5.0
-  // ): Promise<RainwaveResponseTypes["rate_result"]> {
-  //   return Promise.reject("unimplemented");
-  // }
+  rate(
+    params: RainwaveRequests["rate"]["params"]
+  ): Promise<RainwaveRequests["rate"]["response"]> {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "rate",
+          params,
+          (data) => resolve(data as RainwaveRequests["rate"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 
-  // public async request(songId: number): Promise<RainwaveResponseTypes["requests"]> {
-  //   return Promise.reject("unimplemented");
-  // }
+  request(
+    params: RainwaveRequests["request"]["params"]
+  ): Promise<RainwaveRequests["request"]["response"]> {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "request",
+          params,
+          (data) => resolve(data as RainwaveRequests["request"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 
-  // public async requestFavoritedSongs(
-  //   limit?: number
-  // ): Promise<RainwaveResponseTypes["requests"]> {
-  //   return Promise.reject("unimplemented");
-  // }
+  requestFavoritedSongs(
+    params: RainwaveRequests["request_favorited_songs"]["params"]
+  ): Promise<RainwaveRequests["request_favorited_songs"]["response"]> {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "request_favorited_songs",
+          params,
+          (data) =>
+            resolve(data as RainwaveRequests["request_favorited_songs"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 
-  // public async requestLine(): Promise<RainwaveResponseTypes["request_line_result"]> {
-  //   return Promise.reject("unimplemented");
-  // }
+  requestLine(): Promise<RainwaveRequests["request_line"]["response"]> {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "request_line",
+          {},
+          (data) => resolve(data as RainwaveRequests["request_line"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 
-  // public async requestUnratedSongs(limit?: number): Promise<RainwaveResponseTypes["requests"]> {
-  //   return Promise.reject("unimplemented");
-  // }
+  requestUnratedSongs(
+    params: RainwaveRequests["request_unrated_songs"]["params"]
+  ): Promise<RainwaveRequests["request_unrated_songs"]["response"]> {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "request_unrated_songs",
+          params,
+          (data) =>
+            resolve(data as RainwaveRequests["request_unrated_songs"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 
-  // public async search(search: string): Promise<RainwaveResponseTypes["search_results"]> {
-  //   return Promise.reject("unimplemented");
-  // }
+  search(
+    params: RainwaveRequests["search"]["params"]
+  ): Promise<RainwaveRequests["search"]["response"]> {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "search",
+          params,
+          (data) => resolve(data as RainwaveRequests["search"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 
-  // public async song(id: number): Promise<RainwaveResponseTypes["song"]> {
-  //   return Promise.reject("unimplemented");
-  // }
+  song(
+    params: RainwaveRequests["song"]["params"]
+  ): Promise<RainwaveRequests["song"]["response"]> {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "song",
+          params,
+          (data) => resolve(data as RainwaveRequests["song"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 
-  // public async stationSongCount(): Promise<RainwaveResponseTypes["station_song_count"]> {
-  //   return Promise.reject("unimplemented");
-  // }
+  stationSongCount(): Promise<RainwaveRequests["station_song_count"]["response"]> {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "station_song_count",
+          {},
+          (data) => resolve(data as RainwaveRequests["station_song_count"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 
-  // public async stations(): Promise<RainwaveResponseTypes["stations"]> {
-  //   return Promise.reject("unimplemented");
-  // }
+  stations(): Promise<RainwaveRequests["stations"]["response"]> {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "stations",
+          {},
+          (data) => resolve(data as RainwaveRequests["stations"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 
-  // public async top100(): Promise<RainwaveResponseTypes["top_100"]> {
-  //   return Promise.reject("unimplemented");
-  // }
+  top100(): Promise<RainwaveRequests["top_100"]["response"]> {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "top_100",
+          {},
+          (data) => resolve(data as RainwaveRequests["top_100"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 
-  // public async unpauseRequestQueue(): Promise<
-  //   RainwaveResponseTypes["unpause_request_queue_result"]
-  // > {
-  //   return Promise.reject("unimplemented");
-  // }
+  unpauseRequestQueue(): Promise<
+    RainwaveRequests["unpause_request_queue"]["response"]
+  > {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "unpause_request_queue",
+          {},
+          (data) =>
+            resolve(data as RainwaveRequests["unpause_request_queue"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 
-  // public async unratedSongs(): Promise<RainwaveResponseTypes["unrated_songs"]> {
-  //   return Promise.reject("unimplemented");
-  // }
+  unratedSongs(): Promise<RainwaveRequests["unrated_songs"]["response"]> {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "unrated_songs",
+          {},
+          (data) => resolve(data as RainwaveRequests["unrated_songs"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 
-  // public async userInfo(): Promise<RainwaveResponseTypes["user_info_result"]> {
-  //   return Promise.reject("unimplemented");
-  // }
+  userInfo(): Promise<RainwaveRequests["user_info"]["response"]> {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "user_info",
+          {},
+          (data) => resolve(data as RainwaveRequests["user_info"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 
-  // public async userRecentVotes(): Promise<RainwaveResponseTypes["user_recent_votes"]> {
-  //   return Promise.reject("unimplemented");
-  // }
+  userRecentVotes(): Promise<RainwaveRequests["user_recent_votes"]["response"]> {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "user_recent_votes",
+          {},
+          (data) => resolve(data as RainwaveRequests["user_recent_votes"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 
-  // public async userRequestedHistory(): Promise<
-  //   RainwaveResponseTypes["user_requested_history"]
-  // > {
-  //   return Promise.reject("unimplemented");
-  // }
+  userRequestedHistory(): Promise<
+    RainwaveRequests["user_requested_history"]["response"]
+  > {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "user_requested_history",
+          {},
+          (data) =>
+            resolve(data as RainwaveRequests["user_requested_history"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 
-  // public async vote(entryId: number): Promise<RainwaveResponseTypes["vote_result"]> {
-  //   return Promise.reject("unimplemented");
-  // }
+  vote(
+    params: RainwaveRequests["vote"]["params"]
+  ): Promise<RainwaveRequests["vote"]["response"]> {
+    return new Promise((resolve, reject) => {
+      this._request(
+        new RainwaveRequest(
+          "vote",
+          params,
+          (data) => resolve(data as RainwaveRequests["vote"]["response"]),
+          reject
+        )
+      );
+    });
+  }
 }

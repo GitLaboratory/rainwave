@@ -3,10 +3,6 @@ import RainwaveError from "./types/error";
 import RainwaveSDKErrorClear from "./types/errorClear";
 import User from "./types/user";
 
-export interface RainwaveSocketMessage {
-  data: string;
-}
-
 export interface RainwaveResponseTypes {
   album: Album;
   all_albums_by_cursor: unknown;
@@ -72,64 +68,3 @@ export interface RainwaveResponseTypes {
   wsok: true;
   wserror: RainwaveError;
 }
-
-export const ALL_RAINWAVE_RESPONSE_KEYS: Array<keyof RainwaveResponseTypes> = [
-  "album",
-  "all_albums_by_cursor",
-  "all_artists",
-  "all_faves",
-  "all_groups",
-  "all_songs",
-  "all_stations_info",
-  "already_voted",
-  "artist",
-  "build_version",
-  "cookie_domain",
-  "delete_request_result",
-  "error_report_result",
-  "error",
-  "fave_album_result",
-  "fave_all_songs_result",
-  "fave_song_result",
-  "group",
-  "listener",
-  "live_voting",
-  "locale",
-  "locales",
-  "mobile",
-  "on_draw",
-  "on_init",
-  "on_measure",
-  "pause_request_queue_result",
-  "playback_history",
-  "rate_result",
-  "redownload_m3u",
-  "relays",
-  "request_favorited_songs_result",
-  "request_line_result",
-  "request_line",
-  "request_result",
-  "request_unrated_songs_result",
-  "requests",
-  "sched_current",
-  "sched_history",
-  "sched_next",
-  "sdk_exception",
-  "sdk_error_clear",
-  "sdk_schedule_synced",
-  "search_results",
-  "song",
-  "station_list",
-  "station_song_count",
-  "stations",
-  "stream_filename",
-  "top_100",
-  "unpause_request_queue_result",
-  "unrated_songs",
-  "user_info_result",
-  "user_recent_votes",
-  "user_requested_history",
-  "user",
-  "vote_result",
-  "websocket_host",
-];
