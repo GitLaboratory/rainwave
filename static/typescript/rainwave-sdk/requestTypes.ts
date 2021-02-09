@@ -57,6 +57,24 @@ interface ArtistRequest extends BaseRequest {
   };
 }
 
+interface AuthRequest extends BaseRequest {
+  response: {
+    wsok?: RainwaveResponseTypes["wsok"];
+    wserror?: RainwaveResponseTypes["wserror"];
+  };
+  params: {
+    user_id: number;
+    key: string;
+  };
+}
+
+interface CheckSchedCurrentId extends BaseRequest {
+  response: Record<string, never>;
+  params: {
+    sched_id: number;
+  };
+}
+
 interface ClearRatingRequest extends BaseRequest {
   response: { clear_rating: RainwaveResponseTypes["rate_result"] };
   params: {
@@ -65,17 +83,17 @@ interface ClearRatingRequest extends BaseRequest {
 }
 
 interface ClearRequestsRequest extends BaseRequest {
-  response: { clear_requests: RainwaveResponseTypes["requests"] };
+  response: { requests: RainwaveResponseTypes["requests"] };
 }
 
 interface ClearRequestsOnCooldownRequest extends BaseRequest {
   response: {
-    clear_requests_on_cooldown: RainwaveResponseTypes["requests"];
+    requests: RainwaveResponseTypes["requests"];
   };
 }
 
 interface DeleteRequestRequest extends BaseRequest {
-  response: { delete_request: RainwaveResponseTypes["requests"] };
+  response: { requests: RainwaveResponseTypes["requests"] };
   params: {
     songId: number;
   };
@@ -132,7 +150,18 @@ interface OrderRequestsRequest extends BaseRequest {
 
 interface PauseRequestQueueRequest extends BaseRequest {
   response: {
-    pause_requests_queue: RainwaveResponseTypes["requests"];
+    pause_requests_queue_result: RainwaveResponseTypes["pause_request_queue_result"];
+    user: RainwaveResponseTypes["user"];
+  };
+}
+
+interface PingRequest {
+  response: { pong: RainwaveResponseTypes["pong"] };
+}
+
+interface PongRequest {
+  response: {
+    pongConfirm: RainwaveResponseTypes["pongConfirm"];
   };
 }
 
@@ -150,7 +179,7 @@ interface RateRequest extends BaseRequest {
 }
 
 interface RequestRequest extends BaseRequest {
-  response: { request: RainwaveResponseTypes["requests"] };
+  response: { requests: RainwaveResponseTypes["requests"] };
   params: {
     songId: number;
   };
@@ -158,7 +187,8 @@ interface RequestRequest extends BaseRequest {
 
 interface RequestFavoritedSongsRequest extends BaseRequest {
   response: {
-    request_favorited_songs: RainwaveResponseTypes["requests"];
+    request_favorited_songs_result: RainwaveResponseTypes["request_favorited_songs_result"];
+    requests: RainwaveResponseTypes["requests"];
   };
   params: {
     limit?: number;
@@ -171,7 +201,8 @@ interface RequestLineRequest extends BaseRequest {
 
 interface RequestUnratedSongsRequest extends BaseRequest {
   response: {
-    request_unrated_songs: RainwaveResponseTypes["requests"];
+    request_unrated_songs_result: RainwaveResponseTypes["request_unrated_songs_result"];
+    requests: RainwaveResponseTypes["requests"];
   };
   params: {
     limit?: number;
@@ -179,7 +210,11 @@ interface RequestUnratedSongsRequest extends BaseRequest {
 }
 
 interface SearchRequest extends BaseRequest {
-  response: { search: RainwaveResponseTypes["search_results"] };
+  response: {
+    albums: RainwaveResponseTypes["albums"];
+    artists: RainwaveResponseTypes["artists"];
+    songs: RainwaveResponseTypes["songs"];
+  };
   params: {
     search: string;
   };
@@ -206,7 +241,8 @@ interface Top100Request extends BaseRequest {
 
 interface UnpauseRequestQueueRequest extends BaseRequest {
   response: {
-    unpause_request_queue: RainwaveResponseTypes["requests"];
+    unpause_requests_queue_result: RainwaveResponseTypes["unpause_request_queue_result"];
+    user: RainwaveResponseTypes["user"];
   };
 }
 
@@ -246,6 +282,8 @@ interface RainwaveRequests {
   all_groups: AllGroupsRequest;
   all_songs: AllSongsRequest;
   artist: ArtistRequest;
+  auth: AuthRequest;
+  check_sched_current_id: CheckSchedCurrentId;
   clear_rating: ClearRatingRequest;
   clear_requests: ClearRequestsRequest;
   clear_requests_on_cooldown: ClearRequestsOnCooldownRequest;
@@ -258,6 +296,8 @@ interface RainwaveRequests {
   listener: ListenerRequest;
   order_requests: OrderRequestsRequest;
   pause_request_queue: PauseRequestQueueRequest;
+  ping: PingRequest;
+  pong: PongRequest;
   playback_history: PlaybackHistoryRequest;
   rate: RateRequest;
   request: RequestRequest;
