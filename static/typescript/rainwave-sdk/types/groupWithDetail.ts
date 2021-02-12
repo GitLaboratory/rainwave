@@ -1,22 +1,11 @@
-import Album from "./album";
+import { SongBase } from "./songBase";
 import Station from "./station";
+import RainwaveTime from "./time";
 
-interface GroupSong {
-  id: number;
-  title: string;
-  rating: number;
-  requestable: boolean;
-  length: number;
-  disc_number: number | null;
-  track_number: number | null;
+interface GroupSong extends Omit<SongBase, "artists"> {
+  cool_end: RainwaveTime;
   cool: boolean;
-  cool_end: number;
-  url: string | null;
-  link_text: string | null;
-  artist_parseable: string;
-  rating_user: string;
-  fave: boolean;
-  albums: Album[];
+  requestable: boolean;
 }
 
 export default interface GroupWithDetail {

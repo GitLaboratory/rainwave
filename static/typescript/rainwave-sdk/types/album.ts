@@ -2,7 +2,7 @@ import RainwaveTime from "./time";
 
 export interface Album {
   added_on: RainwaveTime;
-  art: string;
+  art: string | null;
   cool_lowest: RainwaveTime;
   cool_multiply: number;
   cool_override: number | null;

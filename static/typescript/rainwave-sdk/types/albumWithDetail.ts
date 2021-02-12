@@ -1,5 +1,20 @@
 import Album from "./album";
+import { SongBase } from "./songBase";
 import SongGroup from "./songGroup";
+import Station from "./station";
+import RainwaveTime from "./time";
+
+interface SongOnAlbum extends SongBase {
+  origin_sid: Station;
+  added_on: RainwaveTime;
+  cool_multiply?: number;
+  cool_override?: number | null;
+  requestable: boolean;
+  cool: boolean;
+  cool_end: number;
+  request_only_end: number;
+  request_only: boolean;
+}
 
 export default interface AlbumWithDetail extends Album {
   genres: SongGroup[];
@@ -10,5 +25,5 @@ export default interface AlbumWithDetail extends Album {
   request_rank: number;
   request_rank_percentile: number;
   rating_histogram: Record<string, number>;
-  songs: ssssssss;
+  songs: SongOnAlbum[];
 }

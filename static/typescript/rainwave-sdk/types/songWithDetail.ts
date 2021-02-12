@@ -1,5 +1,8 @@
+import Album from "./album";
+import AlbumWithDetail from "./albumWithDetail";
 import Artist from "./artist";
 import ElecBlockedBy from "./elecBlockBy";
+import { SongBase } from "./songBase";
 import SongGroup from "./songGroup";
 import Station from "./station";
 
@@ -7,42 +10,27 @@ interface SongWithDetailArtist extends Artist {
   order: number;
 }
 
-interface SongWithDetailAlbum {
-  id: number;
-  rating: number;
-  art: string;
-  name: string;
-  rating_user: number | null;
-  rating_complete: boolean | null;
-  fave: boolean | null;
-}
+type SongWithDetailAlbum = Pick<
+  Album,
+  "id" | "rating" | "art" | "name" | "rating_user" | "fave"
+> & {
+  rating_complete: AlbumWithDetail["rating_complete"];
+};
 
-export default interface SongWithDetail {
-  title: string;
-  id: number;
-  rating: number;
-  origin_sid: Station;
-  link_text: string | null;
-  artist_parseable?: string;
+export default interface SongWithDetail extends SongBase {
+  album: [SongWithDetailAlbum];
+  artists: SongWithDetailArtist[];
   cool: boolean;
-  url: string | null;
-  elec_blocked: boolean;
   elec_blocked_by: ElecBlockedBy;
-  length: number;
-  track_number: number | null;
-  disc_number: number | null;
-  year: number | null;
-  rating_user: number | null;
-  fave: boolean | null;
+  elec_blocked: boolean;
+  groups: SongGroup[];
+  origin_sid: Station;
   rating_allowed: boolean;
-  sid: Station;
-  rating_rank: number;
-  request_rank: number;
-  request_count: number;
   rating_count: number;
   rating_rank_percentile: number;
+  rating_rank: number;
+  request_count: number;
   request_rank_percentile: number;
-  groups: SongGroup[];
-  artists: SongWithDetailArtist[];
-  album: [SongWithDetailAlbum];
+  request_rank: number;
+  sid: Station;
 }

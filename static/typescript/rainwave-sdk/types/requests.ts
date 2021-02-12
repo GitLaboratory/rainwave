@@ -1,34 +1,32 @@
+import Album from "./album";
+import AlbumWithDetail from "./albumWithDetail";
 import ElecBlockedBy from "./elecBlockBy";
+import { SongBase } from "./songBase";
 import Station from "./station";
+import RainwaveTime from "./time";
 
 interface RequestAlbum {
-  name: string;
-  id: number;
-  rating: number;
-  rating_user: number | null;
-  rating_complete: boolean | null;
-  art: string | null;
+  name: Album["name"];
+  id: Album["id"];
+  rating: Album["rating"];
+  rating_user: Album["rating_user"];
+  rating_complete: AlbumWithDetail["rating_complete"];
+  art: Album["art"];
 }
 
-interface Request {
-  id: number;
-  sid: Station;
-  origin_sid: Station;
-  order: number;
-  request_id: number;
-  rating: number;
-  title: string;
-  length: number;
+interface Request extends SongBase {
+  albums: [RequestAlbum];
+  cool_end: RainwaveTime;
   cool: boolean;
-  cool_end: number;
-  good: boolean;
-  elec_blocked: boolean;
   elec_blocked_by: ElecBlockedBy;
   elec_blocked_num: number | null;
+  elec_blocked: boolean;
+  good: boolean;
+  order: number;
+  origin_sid: Station;
+  request_id: number;
+  sid: Station;
   valid: boolean;
-  rating_user: number;
-  fave: boolean | null;
-  albums: [RequestAlbum];
 }
 
 type Requests = Request[];

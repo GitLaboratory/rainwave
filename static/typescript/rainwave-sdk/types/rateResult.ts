@@ -1,17 +1,18 @@
+import Album from "./album";
+import AlbumWithDetail from "./albumWithDetail";
+import BooleanResult from "./booleanResult";
+import { SongBase } from "./songBase";
 import Station from "./station";
 
 interface UpdatedAlbumRating {
   sid: Station;
   id: number;
-  rating_user: number;
-  rating_complete: boolean | null;
+  rating_user: Album["rating_user"];
+  rating_complete: AlbumWithDetail["rating_complete"];
 }
 
-export default interface RateResult {
+export default interface RateResult extends BooleanResult {
   updated_album_ratings: UpdatedAlbumRating[];
-  song_id: number;
-  rating_user: number;
-  success: boolean;
-  tl_key: string;
-  text: string;
+  song_id: SongBase["id"];
+  rating_user: SongBase["rating_user"];
 }
