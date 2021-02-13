@@ -155,11 +155,11 @@ interface PauseRequestQueueRequest extends BaseRequest {
   };
 }
 
-interface PingRequest {
+interface PingRequest extends BaseRequest {
   response: { pong: RainwaveResponseTypes["pong"] };
 }
 
-interface PongRequest {
+interface PongRequest extends BaseRequest {
   response: {
     pongConfirm: RainwaveResponseTypes["pongConfirm"];
   };
