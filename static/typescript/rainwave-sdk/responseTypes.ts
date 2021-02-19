@@ -105,5 +105,6 @@ export interface RainwaveResponseTypes {
   vote_result: VoteResult;
   websocket_host: string;
   wsok: true;
+  wsthrottle: { tl_key: string; text: string };
   wserror: RainwaveError;
 }

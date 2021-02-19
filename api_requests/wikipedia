@@ -1,0 +1,62 @@
+{{Infobox software
+| name = Rainwave
+| logo = Rainwave logo.svg
+| screenshot = [[Image:Rainwave layout simple withoutTab.PNG|250px|RainwaveInterface]]<!-- FAIR USE of Rainwave_layout.png: see image description page at http://en.wikipedia.org/wiki/File:Rainwave_layout.PNG for rationale -->
+| collapsible =
+| author = Rob McAuley
+| developer =
+| released = {{Start date|2006|09|10}}
+| latest release version = Rainwave 5
+| latest release date = {{Release date and age|2015|12|12}}
+| latest preview version =
+| latest preview date =
+| repo = https://github.com/rmcauley/rainwave/
+| programming language =
+| operating system = [[Microsoft Windows]], [[Mac OS X|Apple Mac OS X]], [[Linux]], [[Android (operating system)|Android]], [[iPhone]]
+| platform =
+| size =
+| language = [[English language|English]], [[French language|French]], [[German language|German]], [[Spanish language|Spanish]], [[Finnish language|Finnish]], [[Portuguese language|Portuguese]], [[Russian language|Russian]], [[Korean language|Korean]], [[Dutch language|Dutch]], [[Polish language|Polish]]
+| genre = Music
+| license = [[Open-source license|Open source]]
+| website = https://rainwave.cc/
+}}
+
+'''Rainwave''' is an [[Interactivity|interactive]] [[radio]] [[website]] that allows users to request, rate, and vote for [[song]]s in real time.<ref>{{Cite web|url=http://driph.com/words/2008/05/interview-liquidrain-of-rainwavecc/|title=Interview: LiquidRain of rainwave.cc|date=2008-05-17|website=driph.com/words|language=en-US|access-date=2020-04-06}}</ref> The site hosts five separate radio streams and focuses completely on [[video game music]]. Rainwave is an ad-free service, funded by its [[Patreon|patrons]].
+
+==History==
+The Rainwave [[User interface|web interface]] and [[Back-end database|back-end]] was written by Rob McAuley. The initial version was called "Raincast" and was written as a stream helper for [[Icecast#Technical details|IceS]]. It was announced to the Icecast mailing list in November 2004.<ref>{{Cite web|url=http://lists.xiph.org/pipermail/icecast/2004-November/007849.html|title=[Icecast] Raincast a 'stream helper' I've made. Looking for feedback.|last=McAuley|first=Robert|date=2004-11-13|website=|url-status=live|archive-url=|archive-date=|access-date=2020-04-06}}</ref>
+
+In the summer of 2008, with the addition of a second stream for '''OCR Radio''', Rainwave became the official online radio station for [[OverClocked ReMix]].<ref>[http://oc.ormgas.com/ ormgas.com -> rainwave.cc<!-- Bot generated title -->] {{webarchive|url=https://web.archive.org/web/20100711072819/http://oc.ormgas.com/ |date=2010-07-11 }}</ref><ref>{{Cite web|url=https://ocremix.org/community/topic/11875-ocr-radio-streaming-oc-remixes-247/|title=OCR Radio (streaming OC ReMixes 24/7)|website=OC ReMix Community|language=en-US|access-date=2020-04-06}}</ref> At the same time, the Rainwave interface was upgraded to version 2, or "R2".<ref>{{Cite web|url=http://rainwave.cc/forums/viewtopic.php?f=7&t=38|title=Rainwave 2 Launched - Rainwave|website=rainwave.cc|access-date=2020-04-06}}</ref>
+
+In March 2009, a third stream, '''V-wave''', was added to the site.<ref>{{Cite web|url=http://rainwave.cc/forums/viewtopic.php?f=7&t=549|title=V-wave has launched! - Rainwave|website=rainwave.cc|access-date=2020-04-06}}</ref> V-wave specializes in video game music covers and [[chiptune]]s. For a brief period, V-wave featured live radio shows as well.
+
+In February 2011, '''V-wave''' was renamed to '''Mixwave''' and then eventually '''Covers'''.
+
+Later that year, in August 2011, 2 new stations were introduced. The first was named Omniwave, which hosted all music available on via the website. The second was Bitwave, a stream exclusively for chiptune music. From this point on, Rainwave also started to present its music streams in [[MP3]] format.<ref>{{Cite web|url=https://rainwave.cc/forums/viewtopic.php?f=7&t=2059|title=Omniwave, Bitwave, and MP3 Streams Arrive! - Rainwave|website=rainwave.cc|access-date=2020-04-06}}</ref>
+
+==Technical Functionality==
+Rainwave interface and server-side software has been designed and implemented by Rob "LiquidRain" McAuley.
+
+It is divided into various layers with different functionality:
+* Lyre: [[JavaScript Object Notation|JSON]] [[API]] written in [[Python (programming language)|Python]] using Tornado.
+* Orpheus: custom-made software [[C++]] app made to control Rainwave (incl. elections, song selections, request processing, etc.)
+* Eurydice: custom-made web app paneling system used for the site.
+* LiquidSoap: third-party software for audio streaming. [http://savonet.sourceforge.net/ LiquidSoap official website].
+
+Audio streams are in the Vorbis and mp3 formats at approximately 112 kbit/s.
+
+==See also==
+{{Portal|Radio}}
+* [[List of online music databases]]
+* [[Streaming media]]
+
+==References==
+{{Reflist}}
+
+==External links==
+* {{Official website|http://rainwave.cc/}}
+* [https://github.com/rmcauley/rainwave Github Page]
+* [https://web.archive.org/web/20100708093129/http://www.crispygamer.com/blogs/post/2010/04/30/rainwave-streaming-video-game-music.aspx Crispy Gamer]
+
+[[Category:Internet radio]]
+[[Category:Internet radio stations in the United States]]
