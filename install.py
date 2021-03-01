@@ -53,9 +53,10 @@ if __name__ == "__main__":
 
     for dir_to_copy in copy_dirs:
         copy_tree(dir_to_copy, path.join(install_dir, dir_to_copy))
-    
+
     for file_to_copy in copy_files:
         copy_file(file_to_copy, path.join(install_dir, file_to_copy))
+<<<<<<< HEAD
     
     # for service in services:
     #     service_file = f"{service}.service"
@@ -63,14 +64,24 @@ if __name__ == "__main__":
 
     # subprocess.call(["sudo", "systemctl", "daemon-reload"])
  
+=======
+
+    for service in services:
+        service_file = f"{service}.service"
+        copy_file(path.join("systemd", service_file), path.join(root, "etc", "systemd", "system", service_file))
+
+    subprocess.call(["sudo", "systemctl", "daemon-reload"])
+
+>>>>>>> master
     subprocess.call(["chown", "-R", "%s:%s" % (user, group), install_dir])
 
     pwd = os.getcwd()
     os.chdir(install_dir)
     subprocess.call(["sudo", "--user=rainwave", "python3", "-m", "pipenv", "sync"])
+    subprocess.call(["python3", "-m", "pipenv", "sync"])
     os.chdir(pwd)
 
     print(f"Rainwave installed to {install_dir}")
 
-    # for service in services:
-    #     subprocess.check_call(["service", service, "restart"])
+    for service in services:
+        subprocess.check_call(["service", service, "restart"])

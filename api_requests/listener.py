@@ -1,12 +1,9 @@
 import math
 
-from api.web import APIHandler
-from api.web import PrettyPrintAPIMixin
 from api import fieldtypes
-from api.urls import handle_api_url, handle_api_html_url
-
-from libs import cache
-from libs import db
+from api.urls import handle_api_html_url, handle_api_url
+from api.web import APIHandler, PrettyPrintAPIMixin
+from libs import cache, db
 from rainwave import playlist
 from rainwave import user as UserLib
 
@@ -21,9 +18,9 @@ class ListenerDetailRequest(APIHandler):
     def post(self):
         user = db.c.fetch_row(
             "SELECT user_id, username AS name, user_avatar AS avatar, user_avatar_type AS avatar_type, user_colour AS colour, rank_title AS rank, "
-            "radio_totalvotes AS total_votes, radio_totalratings AS total_ratings, radio_totalmindchange AS mind_changes, "
-            "radio_totalrequests AS total_requests, radio_winningvotes AS winning_votes, radio_losingvotes AS losing_votes, "
-            "radio_winningrequests AS winning_requests, radio_losingrequests AS losing_requests, user_regdate AS regdate "
+            "0 AS total_votes, 0 AS total_ratings, 0 AS mind_changes, "
+            "0 AS total_requests, 0 AS winning_votes, 0 AS losing_votes, "
+            "0 AS winning_requests, 0 AS losing_requests, user_regdate AS regdate "
             "FROM phpbb_users LEFT JOIN phpbb_ranks ON (user_rank = rank_id) WHERE user_id = %s",
             (self.get_argument("id"),),
         )
@@ -32,7 +29,7 @@ class ListenerDetailRequest(APIHandler):
         user.pop("avatar_type")
 
         user["top_albums"] = db.c.fetch_all(
-            "SELECT album_id AS id, album_name AS name, album_rating_user AS rating_listener, album_rating AS rating "
+            "SELECT album_id AS id, album_name AS name, CAST(ROUND(CAST(album_rating_user AS NUMERIC), 1) AS REAL) AS rating_listener, CAST(ROUND(CAST(album_rating AS NUMERIC), 1) AS REAL) AS rating "
             "FROM r4_album_ratings "
             "JOIN r4_album_sid USING (album_id, sid) "
             "JOIN r4_albums USING (album_id) "
@@ -83,12 +80,6 @@ class ListenerDetailRequest(APIHandler):
             "GROUP BY sid",
             (self.get_argument("id"),),
         )
-
-        # user['votes_by_source_station'] = db.c.fetch_all("SELECT song_origin_sid AS sid, COUNT(vote_id) AS votes "
-        # 										"FROM r4_vote_history JOIN r4_songs USING (song_id) "
-        # 										"WHERE user_id = %s "
-        # 										"GROUP BY song_origin_sid",
-        # 										(self.get_argument("id"),))
 
         user["requests_by_station"] = db.c.fetch_all(
             "SELECT sid, COUNT(request_id) AS requests "

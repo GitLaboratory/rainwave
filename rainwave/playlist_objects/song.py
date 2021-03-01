@@ -1,28 +1,23 @@
-import os
 import copy
+import os
 
 try:
     import ujson as json
 except ImportError:
     import json
+
 from time import time as timestamp
 
-from mutagen.mp3 import MP3
-
-from libs import db
-from libs import config
-from libs import cache
-from libs import log
-from libs import replaygain
-from rainwave import rating
 from api import fieldtypes
-
-from rainwave.playlist_objects.artist import Artist
-from rainwave.playlist_objects.album import Album
-from rainwave.playlist_objects.songgroup import SongGroup
-from rainwave.playlist_objects.metadata import make_searchable_string
+from libs import cache, config, db, log, replaygain
+from mutagen.mp3 import MP3
+from rainwave import rating
 from rainwave.playlist_objects import cooldown
-from rainwave.playlist_objects.metadata import MetadataUpdateError
+from rainwave.playlist_objects.album import Album
+from rainwave.playlist_objects.artist import Artist
+from rainwave.playlist_objects.metadata import (MetadataUpdateError,
+                                                make_searchable_string)
+from rainwave.playlist_objects.songgroup import SongGroup
 
 num_songs = {}
 num_origin_songs = {}
@@ -167,12 +162,12 @@ class Song:
         s.albums[0].associate_song_id(s.id)
 
         s.update_artist_parseable()
-        
+
         # do not get replay gain earlier in case an exception is thrown above
         # it means a lot of wasted CPU time in that scenario
-        if s.replay_gain is None:
+        if db.c.fetch_var("SELECT song_replay_gain FROM r4_songs WHERE song_id = %s", (s.id,)) is None:
             s.replay_gain = s.get_replay_gain()
-            s.save()
+            db.c.update("UPDATE r4_songs SET song_replay_gain = %s WHERE song_id = %s", (s.replay_gain, s.id))
 
         return s
 
@@ -227,66 +222,66 @@ class Song:
 		Reads ID3 tags and sets object-level variables.
 		"""
 
-        # log.debug("playlist", u"reading tag info from {}".format(filename))
-        f = MP3(filename, translate=False)
-        self.filename = filename
+        with open(filename, "rb") as mp3file:
+            f = MP3(mp3file, translate=False)
+            self.filename = filename
 
-        if not f.tags:
-            raise PassableScanError('Song filename "%s" has no tags.' % filename)
+            if not f.tags:
+                raise PassableScanError('Song filename "%s" has no tags.' % filename)
 
-        w = f.tags.getall("TIT2")
-        if len(w) > 0 and len(str(w[0])) > 0:
-            self.data["title"] = str(w[0]).strip()
-        else:
-            raise PassableScanError('Song filename "%s" has no title tag.' % filename)
-        w = f.tags.getall("TPE1")
-        if len(w) > 0 and len(str(w[0])) > 0:
-            self.artist_tag = str(w[0])
-        else:
-            raise PassableScanError('Song filename "%s" has no artist tag.' % filename)
-        w = f.tags.getall("TALB")
-        if len(w) > 0 and len(str(w[0]).strip()) > 0:
-            self.album_tag = str(w[0]).strip()
-        else:
-            raise PassableScanError('Song filename "%s" has no album tag.' % filename)
-        if config.get("scanner_use_tracknumbers"):
-            w = f.tags.getall("TRCK")
+            w = f.tags.getall("TIT2")
+            if len(w) > 0 and len(str(w[0])) > 0:
+                self.data["title"] = str(w[0]).strip()
+            else:
+                raise PassableScanError('Song filename "%s" has no title tag.' % filename)
+            w = f.tags.getall("TPE1")
+            if len(w) > 0 and len(str(w[0])) > 0:
+                self.artist_tag = str(w[0])
+            else:
+                raise PassableScanError('Song filename "%s" has no artist tag.' % filename)
+            w = f.tags.getall("TALB")
+            if len(w) > 0 and len(str(w[0]).strip()) > 0:
+                self.album_tag = str(w[0]).strip()
+            else:
+                raise PassableScanError('Song filename "%s" has no album tag.' % filename)
+            if config.get("scanner_use_tracknumbers"):
+                w = f.tags.getall("TRCK")
+                if w is not None and len(w) > 0:
+                    try:
+                        self.data["track_number"] = fieldtypes.integer(str(w[0]))
+                    except ValueError:
+                        pass
+                w = f.tags.getall("TPOS")
+                if w is not None and len(w) > 0:
+                    try:
+                        self.data["disc_number"] = fieldtypes.integer(str(w[0]))
+                    except ValueError:
+                        pass
+            w = f.tags.getall("TCON")
+            if len(w) > 0 and len(str(w[0])) > 0:
+                self.genre_tag = str(w[0])
+            w = f.tags.getall("COMM")
+            if len(w) > 0 and len(str(w[0])) > 0:
+                self.data["link_text"] = str(w[0]).strip()
+            w = f.tags.getall("WXXX")
+            if len(w) > 0 and len(str(w[0])) > 0:
+                self.data["url"] = str(w[0]).strip()
+            else:
+                self.data["url"] = None
+            w = f.tags.getall("TYER")
             if w is not None and len(w) > 0:
                 try:
-                    self.data["track_number"] = fieldtypes.integer(str(w[0]))
+                    self.data["year"] = fieldtypes.integer(str(w[0]))
                 except ValueError:
                     pass
-            w = f.tags.getall("TPOS")
-            if w is not None and len(w) > 0:
+            w = f.tags.getall("TDRC")
+            if self.data["year"] is None and w is not None and len(w) > 0:
                 try:
-                    self.data["disc_number"] = fieldtypes.integer(str(w[0]))
+                    self.data["year"] = fieldtypes.integer(str(w[0]))
                 except ValueError:
                     pass
-        w = f.tags.getall("TCON")
-        if len(w) > 0 and len(str(w[0])) > 0:
-            self.genre_tag = str(w[0])
-        w = f.tags.getall("COMM")
-        if len(w) > 0 and len(str(w[0])) > 0:
-            self.data["link_text"] = str(w[0]).strip()
-        w = f.tags.getall("WXXX")
-        if len(w) > 0 and len(str(w[0])) > 0:
-            self.data["url"] = str(w[0]).strip()
-        else:
-            self.data["url"] = None
-        w = f.tags.getall("TYER")
-        if w is not None and len(w) > 0:
-            try:
-                self.data["year"] = fieldtypes.integer(str(w[0]))
-            except ValueError:
-                pass
-        w = f.tags.getall("TDRC")
-        if self.data["year"] is None and w is not None and len(w) > 0:
-            try:
-                self.data["year"] = fieldtypes.integer(str(w[0]))
-            except ValueError:
-                pass
 
-        self.data["length"] = int(f.info.length)
+            self.data["length"] = int(f.info.length)
 
     def get_replay_gain(self):
         return replaygain.get_gain_for_song(self.filename)
@@ -707,9 +702,10 @@ class Song:
             (self.id,),
         )
         for point in histo:
-            self.data["rating_histogram"][str(point["rating_user_rnd"])] = point[
-                "rating_user_count"
-            ]
+            if point["rating_user_rnd"]:
+                self.data["rating_histogram"][str(point["rating_user_rnd"])] = point[
+                    "rating_user_count"
+                ]
 
     def to_dict(self, user=None):
         d = {}
