@@ -9,6 +9,7 @@ from libs import db
 from libs import cache
 
 import api.web
+from api.web import APIException
 from api.urls import handle_url
 from api import fieldtypes
 
@@ -23,7 +24,11 @@ def write_html_time_form(request, html_id, at_time=None):
     year_range_end = datetime.datetime.now().year + 3
     request.write(
         request.render_string(
-            "admin_time_select.html", at_time=at_time, html_id=html_id, year_range_start=year_range_start, year_range_end=year_range_end
+            "admin_time_select.html",
+            at_time=at_time,
+            html_id=html_id,
+            year_range_start=year_range_start,
+            year_range_end=year_range_end,
         )
     )
 
@@ -92,8 +97,6 @@ class ToolList(api.web.HTMLRequest):
             ("Associate Groups", "associate_groups"),
             ("Disassociate Groups", "disassociate_groups"),
             ("Edit Groups", "group_edit"),
-            ("Listener Count", "listener_stats"),
-            ("Listener Count [Wkly]", "listener_stats_aggregate"),
             ("JS Errors", "js_errors"),
         ]:
             self.write(
@@ -287,6 +290,9 @@ class SongList(api.web.PrettyPrintAPIMixin, api_requests.playlist.AlbumHandler):
     # fields are handled by AlbumHandler
 
     def get(self):  # pylint: disable=method-hidden
+        if not isinstance(self._output, dict):
+            raise APIException("internal_error", http_code=500)
+
         self.write(self.render_string("bare_header.html", title="Song List"))
         self.write(
             "<h2>%s (%s)</h2>"

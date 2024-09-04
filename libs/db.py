@@ -5,12 +5,10 @@ import time
 from libs import config
 from libs import log
 
-c = None
-connection = None
-connection_errors = (psycopg2.OperationalError, psycopg2.InterfaceError)
 
 class DatabaseDisconnectedError(Exception):
     pass
+
 
 class PostgresCursor(psycopg2.extras.RealDictCursor):
     in_tx = False
@@ -44,6 +42,8 @@ class PostgresCursor(psycopg2.extras.RealDictCursor):
         if self.rowcount <= 0 or not self.rowcount:
             return None
         r = self.fetchone()
+        if not r:
+            return None
         return r[next(iter(r.keys()))]
 
     def fetch_row(self, query, params=None):
@@ -58,12 +58,14 @@ class PostgresCursor(psycopg2.extras.RealDictCursor):
             return []
         return self.fetchall()
 
-    def fetch_list(self, query, params=None):
+    def fetch_list(self, query, params=None) -> list:
         self.execute(query, params)
         if self.rowcount <= 0 or not self.rowcount:
             return []
         arr = []
         row = self.fetchone()
+        if not row:
+            return []
         col = next(iter(row.keys()))
         arr.append(row[col])
         for row in self.fetchall():
@@ -125,11 +127,18 @@ class PostgresCursor(psycopg2.extras.RealDictCursor):
         self.in_tx = False
 
 
+# Ignoring type because we expect a crash if these don't exist anyway.
+# App won't run without the cursor and connection established.
+c: PostgresCursor = None  # type: ignore
+connection: psycopg2.extensions.connection = None  # type: ignore
+connection_errors = (psycopg2.OperationalError, psycopg2.InterfaceError)
+
+
 def connect(auto_retry=True, retry_only_this_time=False):
     global connection
     global c
 
-    if connection and c and not c.disconnected:
+    if connection and c and not c.closed:
         return True
 
     name = config.get("db_name")
@@ -152,8 +161,12 @@ def connect(auto_retry=True, retry_only_this_time=False):
     connected = False
     while not connected:
         try:
-            connection = psycopg2.connect(base_connstr + ("dbname=%s" % name), connect_timeout=1)
-            connection.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+            connection = psycopg2.connect(
+                base_connstr + ("dbname=%s" % name), connect_timeout=1
+            )
+            connection.set_isolation_level(
+                psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT
+            )
             connection.autocommit = True
             c = connection.cursor(cursor_factory=PostgresCursor)
             c.auto_retry = auto_retry
@@ -179,10 +192,11 @@ def close():
         c.close()
     if connection:
         connection.close()
-    c = None
-    connection = None
+    c = None  # type: ignore
+    connection = None  # type: ignore
 
     return True
+
 
 def connection_keepalive():
     if c.disconnected:
@@ -193,6 +207,7 @@ def connection_keepalive():
     except connection_errors:
         c.disconnected = True
         connect(auto_retry=False)
+
 
 def create_tables():
     trgrm_exists = c.fetch_var(

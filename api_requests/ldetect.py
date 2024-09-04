@@ -52,7 +52,7 @@ class IcecastHandler(RainwaveHandler):
             exc = kwargs["exc_info"][1]
             if isinstance(exc, APIException):
                 exc.localize(self.locale)
-                self.set_header("icecast-auth-message", exc.reason)
+                self.set_header("icecast-auth-message", exc.reason or "No reason.")
             log.debug("ldetect", "Relay command failed: %s" % exc.reason)
             log.exception(
                 "ldetect", "Exception encountered handling relay command.", exc
@@ -80,9 +80,12 @@ class AddListener(IcecastHandler):
     listener_ip = None
 
     def post(self, sid):
-        (self.mount, self.user_id, self.listen_key) = self.get_argument("mount")
+        (self.mount, self.user_id, self.listen_key, self.listener_ip) = (
+            self.get_argument_required("mount")
+        )
         self.agent = self.get_argument("agent")
-        self.listener_ip = self.get_argument("ip")
+        if self.listener_ip is None:
+            self.listener_ip = self.get_argument("ip")
 
         if sid:
             try:
@@ -113,7 +116,7 @@ class AddListener(IcecastHandler):
                 "WHERE user_id = %s",
                 (
                     sid,
-                    self.get_argument("ip"),
+                    self.listener_ip,
                     self.get_argument("client"),
                     self.relay,
                     self.agent,
@@ -125,7 +128,7 @@ class AddListener(IcecastHandler):
                 % (
                     "{:<5}".format(self.user_id),
                     sid,
-                    "{:<15}".format(self.get_argument("ip")),
+                    "{:<15}".format(self.listener_ip),
                     "{:<15}".format(self.relay),
                     "{:<10}".format(self.get_argument("client")),
                     self.agent,
@@ -141,7 +144,7 @@ class AddListener(IcecastHandler):
                 (
                     sid,
                     self.user_id,
-                    self.get_argument("ip"),
+                    self.listener_ip,
                     self.get_argument("client"),
                     self.relay,
                     self.agent,
@@ -152,7 +155,7 @@ class AddListener(IcecastHandler):
                 % (
                     "{:<5}".format(self.user_id),
                     sid,
-                    "{:<15}".format(self.get_argument("ip")),
+                    "{:<15}".format(self.listener_ip),
                     "{:<15}".format(self.relay),
                     "{:<10}".format(self.get_argument("client")),
                     self.agent,
@@ -174,7 +177,7 @@ class AddListener(IcecastHandler):
 
         records = db.c.fetch_list(
             "SELECT listener_id FROM r4_listeners WHERE (listener_ip = %s OR listener_key = %s) AND user_id = 1",
-            (self.get_argument("ip"), self.listen_key),
+            (self.listener_ip, self.listen_key),
         )
         if len(records) == 0:
             db.c.update(
@@ -183,7 +186,7 @@ class AddListener(IcecastHandler):
                 "VALUES (%s, %s, %s, %s, %s, %s, %s)",
                 (
                     sid,
-                    self.get_argument("ip"),
+                    self.listener_ip,
                     1,
                     self.relay,
                     self.get_argument("agent"),
@@ -196,7 +199,7 @@ class AddListener(IcecastHandler):
                 % (
                     "{:<5}".format(self.user_id),
                     sid,
-                    "{:<15}".format(self.get_argument("ip")),
+                    "{:<15}".format(self.listener_ip),
                     "{:<15}".format(self.relay),
                     "{:<10}".format(self.get_argument("client")),
                     self.agent,
@@ -220,7 +223,7 @@ class AddListener(IcecastHandler):
                 "WHERE listener_id = %s",
                 (
                     sid,
-                    self.get_argument("ip"),
+                    self.listener_ip,
                     self.relay,
                     self.get_argument("agent"),
                     self.get_argument("client"),
@@ -233,7 +236,7 @@ class AddListener(IcecastHandler):
                 % (
                     "{:<5}".format(self.user_id),
                     sid,
-                    "{:<15}".format(self.get_argument("ip")),
+                    "{:<15}".format(self.listener_ip),
                     "{:<15}".format(self.relay),
                     "{:<10}".format(self.get_argument("client")),
                     self.agent,

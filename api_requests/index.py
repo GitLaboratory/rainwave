@@ -13,8 +13,7 @@ from libs import buildtools
 from rainwave.user import User
 
 STATION_REGEX = "|".join(
-    stream_filename for stream_filename
-    in config.stream_filename_to_sid.keys()
+    stream_filename for stream_filename in config.stream_filename_to_sid.keys()
 )
 
 
@@ -30,6 +29,7 @@ class Blank(api.web.HTMLRequest):
 
 @handle_url("/(?P<station>{})?/?(?:index.html)?".format(STATION_REGEX))
 class MainIndex(api.web.HTMLRequest):
+    sid: int = config.get("default_station")
     description = "Main Rainwave page."
     auth_required = config.has("index_requires_login") and config.get(
         "index_requires_login"
@@ -54,11 +54,13 @@ class MainIndex(api.web.HTMLRequest):
             self.set_header("Strict-Transport-Security", "max-age=63072000; preload")
 
     def prepare(self):
-        if self.path_kwargs.get("station"):
-            self.sid = config.stream_filename_to_sid.get(self.path_kwargs["station"])
-            if not self.sid:
+        station_kwarg = self.path_kwargs.get("station")
+        if station_kwarg:
+            potential_sid = config.stream_filename_to_sid.get(station_kwarg)
+            if not potential_sid:
                 self.redirect(config.get("base_site_url"))
                 return
+            self.sid = potential_sid
 
         super(MainIndex, self).prepare()
 
@@ -105,10 +107,7 @@ class MainIndex(api.web.HTMLRequest):
         self.user.ip_address = self.request.remote_ip
         self.user.ensure_api_key()
 
-        if (
-            self.beta
-            or config.get("developer_mode")
-        ):
+        if self.beta or config.get("developer_mode"):
             buildtools.bake_beta_css()
             buildtools.bake_beta_templates()
             self.jsfiles = []
@@ -125,11 +124,10 @@ class MainIndex(api.web.HTMLRequest):
 
     def get(self, station=None):
         self.mobile = False
-        ua = self.request.headers.get("User-Agent") or ''
+        ua = self.request.headers.get("User-Agent") or ""
         if ua:
             self.mobile = (
-                ua.lower().find("mobile") != -1
-                or ua.lower().find("android") != -1
+                ua.lower().find("mobile") != -1 or ua.lower().find("android") != -1
             )
         page_title = None
         if self.sid == config.get("default_station"):
@@ -164,6 +162,7 @@ class BetaRedirect(tornado.web.RequestHandler):
 
     def prepare(self):
         self.redirect("/beta/", permanent=True)
+
 
 @handle_url("/(?P<station>{})/beta/".format(STATION_REGEX))
 class BetaIndex(MainIndex):
@@ -202,9 +201,9 @@ class Bootstrap(api.web.APIHandler):
         if not self.user:
             self.user = User(1)
         self.user.ensure_api_key()
+        ua = self.request.headers.get("User-Agent") or ""
         self.is_mobile = (
-            self.request.headers.get("User-Agent").lower().find("mobile") != -1
-            or self.request.headers.get("User-Agent").lower().find("android") != -1
+            ua.lower().find("mobile") != -1 or ua.lower().find("android") != -1
         )
 
     def get(self):  # pylint: disable=method-hidden

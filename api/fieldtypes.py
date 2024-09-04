@@ -1,8 +1,9 @@
+import ipaddress
 import re
 import time
 import numbers
 from datetime import datetime
-from urllib.parse import urlparse
+from urllib.parse import parse_qsl, urlparse
 
 from libs import config
 from libs import db
@@ -14,15 +15,14 @@ string_error = "must be a string."
 def string(in_string, request=None):
     if not in_string:
         return None
-    if not isinstance(in_string, str):
-        return None
+    if isinstance(in_string, bytes):
+        in_string = in_string.decode()
     if isinstance(in_string, str):
         return in_string
     try:
-        return str(in_string, "utf-8").strip()
+        return in_string.decode("utf-8").strip()
     except UnicodeDecodeError:
-        return str(in_string).strip()
-    return None
+        return None
 
 
 # All _error variables start with no capital letter and end with a period.
@@ -30,8 +30,10 @@ numeric_error = "must be a number."
 
 
 def numeric(s, request=None):
-    if isinstance(s, numbers.Number):
+    if isinstance(s, (int, float)):
         return s
+    if isinstance(s, bytes):
+        s = s.decode()
     if not s:
         return None
     if not isinstance(s, str):
@@ -45,8 +47,12 @@ integer_error = "must be a number."
 
 
 def integer(s, request=None):
-    if isinstance(s, numbers.Number):
+    if isinstance(s, (int)):
         return s
+    if isinstance(s, float):
+        return int(s)
+    if isinstance(s, bytes):
+        s = s.decode()
     if not s:
         return None
     if not isinstance(s, str):
@@ -226,9 +232,9 @@ def boolean(s, request=None):
         return True
     elif s == False:
         return False
-    elif s == "true":
+    elif s == "true" or s == "True":
         return True
-    elif s == "false":
+    elif s == "false" or s == "False":
         return False
     return None
 
@@ -283,6 +289,8 @@ def integer_list(s, request=None):
                 return None
         return s
 
+    if isinstance(s, bytes):
+        s = s.decode()
     if not s:
         return None
     try:
@@ -302,7 +310,7 @@ string_list_error = "must be a comma-separated list of strings."
 def string_list(s, request=None):
     if isinstance(s, list):
         for i in s:
-            if not isinstance(i, string):
+            if not isinstance(i, str):
                 return None
         return s
     l = []
@@ -331,13 +339,15 @@ def song_id_list(s, request=None):
     return l
 
 
-# Returns a set of (mount, user_id, listen_key)
+# Returns a set of (mount, user_id, listen_key, listener_ip)
 icecast_mount_error = "invalid Icecast mount."
 
 
 def icecast_mount(s, request=None):
     if not s:
         return None
+    if isinstance(s, bytes):
+        s = s.decode()
     parsed = urlparse(s)
     path = parsed.path
     if path[0] == "/":
@@ -346,15 +356,71 @@ def icecast_mount(s, request=None):
     if not mount:
         return None
 
+    # mount point query string
+    #
+    # When listeners tune in from the web interface or use an unaltered m3u file downloaded from the
+    # web interface while tuned in, the streaming client will send a request to the relay that
+    # includes a user id and listen key. The request looks like this:
+    #
+    # /all.ogg?1000:1a2b3c4d5e
+    #
+    # Nginx will receive this request and append the client IP address before forwarding the request
+    # to Icecast. Now the request to Icecast looks like this:
+    #
+    # /all.ogg?1000:1a2b3c4d5e&1.2.3.4
+    #
+    # To authenticate the streaming client, Icecast will send a request to Rainwave (listener_add)
+    # and include the above string in the `mount` query argument.
+    #
+    # Because we aren't using the usual name=value query format, we can parse the query string with
+    # `parse_qsl(qs, keep_blank_values=True)` and get a list that looks like this:
+    #
+    # [('1000:1a2b3c4d5e', ''), ('1.2.3.4', '')]
+    #
+    # If the listener is not signed in, the user id and listen key will not be present, but Nginx
+    # will still append the client IP address, so the request will look like this:
+    #
+    # /all.ogg?&1.2.3.4
+    #
+    # Parsing this query string will return a list that looks like this:
+    #
+    # [('1.2.3.4', '')]
+    #
+    # The code below assumes that the *last* tuple in the list is the client IP address, and if the
+    # list length is longer than 1, the *first* tuple contains the user id information.
+    #
+    # Because all requests are proxied through Nginx, we can be reasonably sure that the *last*
+    # tuple in the list is the real client IP address. If a malicious client tries to supply a fake
+    # IP address in the query string, Nginx will always append the real client IP address at the end
+    # of the query string before forwarding the request to Icecast.
+
     uid = 1
     listen_key = None
-    match = re.search(r"^(?P<user>\d+):(?P<key>[\d\w]+)$", parsed.query)
-    if match:
-        args = match.groupdict()
-        if args.get("user") and args.get("key"):
-            uid = int(args["user"])
-            listen_key = args["key"]
-    return (mount, uid, listen_key)
+    listener_ip = None
+
+    params = parse_qsl(parsed.query, keep_blank_values=True)
+
+    if len(params) > 0:
+        ip_param = params[-1][0]
+        try:
+            # This works for both IPv4 and IPv6.
+            listener_ip = str(ipaddress.ip_address(ip_param))
+        except ValueError:
+            # Somehow this wasn't a valid IP address.
+            listener_ip = None
+
+    if len(params) > 1:
+        id_param = params[0][0]
+        if ":" in id_param:
+            parsed_uid, parsed_listen_key = id_param.split(":", maxsplit=1)
+            try:
+                uid = int(parsed_uid)
+            except ValueError:
+                uid = 1
+            if len(parsed_listen_key) == 10:
+                listen_key = parsed_listen_key
+
+    return (mount, uid, listen_key, listener_ip)
 
 
 ip_address_error = "invalid IP address."
@@ -453,9 +519,11 @@ def group_id(s, request=None):
 date_error = "must be valid ISO 8601 date. (YYYY-MM-DD)"
 
 
-def date(s, request=None):
+def date(s, request=None) -> datetime | None:
     if not s:
         return None
+    if isinstance(s, bytes):
+        s = s.decode()
     try:
         return datetime.strptime(s, "%Y-%m-%d")
     except Exception:

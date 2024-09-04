@@ -1,3 +1,4 @@
+from typing import cast
 from api.web import APIHandler
 from api.exceptions import APIException
 from api import fieldtypes
@@ -5,6 +6,7 @@ from api.urls import handle_api_url
 import api_requests.vote
 import api_requests.playlist
 import api_requests.tune_in
+from rainwave.events.event import BaseEvent
 
 from libs import cache
 from libs import config
@@ -26,7 +28,7 @@ def attach_dj_info_to_request(request):
 
 
 def attach_info_to_request(
-    request, extra_list=None, all_lists=False, live_voting=False
+    request: APIHandler, extra_list=None, all_lists=False, live_voting=False
 ):
     # Front-load all non-animated content ahead of the schedule content
     # Since the schedule content is the most animated on R3, setting this content to load
@@ -84,7 +86,7 @@ def attach_info_to_request(
 
         request.append("request_line", cache.get_station(request.sid, "request_line"))
 
-    sched_next = None
+    sched_next = []
     sched_history = None
     sched_current = None
     if request.user and not request.user.is_anonymous():
@@ -100,7 +102,9 @@ def attach_info_to_request(
             sched_current.get_song().data["rating_allowed"] = True
         sched_current = sched_current.to_dict(request.user)
         sched_next = []
-        sched_next_objects = cache.get_station(request.sid, "sched_next")
+        sched_next_objects = cast(
+            list[BaseEvent], cache.get_station(request.sid, "sched_next")
+        )
         for evt in sched_next_objects:
             sched_next.append(evt.to_dict(request.user))
         if (
@@ -118,7 +122,9 @@ def attach_info_to_request(
                 ):
                     sched_next[i]["voting_allowed"] = True
         sched_history = []
-        for evt in cache.get_station(request.sid, "sched_history"):
+        for evt in cast(
+            list[BaseEvent], cache.get_station(request.sid, "sched_history")
+        ):
             sched_history.append(evt.to_dict(request.user, check_rating_acl=True))
     elif request.user:
         sched_current = cache.get_station(request.sid, "sched_current_dict")
@@ -128,7 +134,7 @@ def attach_info_to_request(
                 "Rainwave is Rebooting, Please Try Again in a Few Minutes",
                 http_code=500,
             )
-        sched_next = cache.get_station(request.sid, "sched_next_dict")
+        sched_next = cast(list[dict], cache.get_station(request.sid, "sched_next_dict"))
         sched_history = cache.get_station(request.sid, "sched_history_dict")
         if (
             len(sched_next) > 0
@@ -149,7 +155,7 @@ def attach_info_to_request(
             if (
                 len(sched_next) > 0
                 and request.user.data.get("voted_entry")
-                and request.user.data.get("voted_entry") > 0
+                and request.user.data.get("voted_entry") > 0  # type: ignore
                 and request.user.data["lock_sid"] == request.sid
             ):
                 request.append(
@@ -163,7 +169,7 @@ def attach_info_to_request(
         request.append("live_voting", cache.get_station(request.sid, "live_voting"))
 
 
-def check_sync_status(sid, offline_ack=False):
+def check_sync_status(sid, offline_ack: bool | None = False):
     if not cache.get_station(sid, "backend_ok") and not offline_ack:
         raise APIException("station_offline")
     if cache.get_station(sid, "backend_paused") and not offline_ack:
@@ -219,9 +225,11 @@ class StationsRequest(APIHandler):
                     "description": self.locale.translate(
                         "station_description_id_%s" % station_id
                     ),
-                    "stream": api_requests.tune_in.get_round_robin_url(station_id, user=self.user),
+                    "stream": api_requests.tune_in.get_round_robin_url(
+                        station_id, user=self.user
+                    ),
                     "relays": config.public_relays[station_id],
-                    "key": config.get_station(station_id, "stream_filename")
+                    "key": config.get_station(station_id, "stream_filename"),
                 }
             )
         self.append(self.return_name, station_list)

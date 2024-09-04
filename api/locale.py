@@ -126,7 +126,7 @@ def compile_static_language_files():
             "w",
             encoding="utf-8",
         )
-        f.write(u"\u4500")
+        f.write("\u4500")
         f.seek(0)
         f.write(
             'var LOCALE = "'
@@ -224,6 +224,8 @@ class RainwaveLocale(tornado.locale.Locale):
         return line
 
     def get_suffixed_number(self, number):
+        if isinstance(number, bytes):
+            number = number.decode()
         if not isinstance(number, str):
             number = str(number)
         for i in range(0, len(number) - 1):

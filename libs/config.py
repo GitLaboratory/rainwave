@@ -18,7 +18,7 @@ station_list = {}
 station_list_json = {}
 station_mounts = {}
 station_mount_filenames = {}
-stream_filename_to_sid = {}
+stream_filename_to_sid: dict[str, int] = {}
 csp_header = ""
 
 buildnum_file = os.path.join(os.path.dirname(__file__), "..", "etc", "buildnum")
@@ -30,6 +30,7 @@ def get_build_number():
             return int(bnf.read())
     except:
         return 0
+
 
 def get_and_bump_build_number():
     buildnum = get_build_number() + 1

@@ -353,7 +353,7 @@ class Election(event.BaseEvent):
                             song.id,
                         ),
                     )
-                    for album in song.albums:
+                    if song.album:
                         db.c.update(
                             "UPDATE r4_album_sid SET "
                             "album_vote_share = ((album_vote_count + %s) / (album_votes_seen + %s)), "
@@ -365,7 +365,7 @@ class Election(event.BaseEvent):
                                 total_votes,
                                 song.data["entry_votes"],
                                 total_votes,
-                                album.id,
+                                song.album.id,
                                 self.sid,
                             ),
                         )
@@ -465,6 +465,7 @@ class Election(event.BaseEvent):
         if _request_interval[self.sid] <= 0 and _request_sequence[self.sid] <= 0:
             line_length = cache.get_station(self.sid, "request_valid_positions")
             if not line_length:
+                line_length = 0
                 for entry in cache.get_station(self.sid, "request_line") or []:
                     if entry["song_id"]:
                         line_length += 1
@@ -558,7 +559,7 @@ class Election(event.BaseEvent):
         obj["length"] = self.length()
         obj["songs"] = []
         for song in self.songs:
-            if check_rating_acl and not user.is_anonymous():
+            if check_rating_acl and user and not user.is_anonymous():
                 song.check_rating_acl(user)
             obj["songs"].append(song.to_dict(user))
         return obj

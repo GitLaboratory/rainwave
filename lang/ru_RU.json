@@ -13,7 +13,7 @@
    "auth_required"                                   : "Требуется авторизация.",
    "auth_failed"                                     : "Авторизация не удалась.",
    "login_required"                                  : "Требуется логин.",
-   "tunein_required"                                 : "Вы должны быть настроены You must be tuned in.",
+   "tunein_required"                                 : "Вы должны слушать радио.",
    "admin_required"                                  : "Вы должны быть администратором.",
    "dj_required"                                     : "Вы должны быть ДиДжеем.",
    "perks_required"                                  : "Вы должны быть Донором.",
@@ -87,7 +87,6 @@
    "station_name_4"                                  : "Chiptune",
    "station_name_5"                                  : "All",
 
-   "forums"                                          : "Форум",
    "login"                                           : "Вход",
    "signup"                                          : "Зарегистрироваться",
    "chat"                                            : "Чат",

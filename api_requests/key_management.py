@@ -21,9 +21,9 @@ class KeyIndex(api.web.HTMLRequest):
         global qr_service
         global mini_qr_service
 
-        if self.request.headers.get("User-Agent").lower().find(
-            "android"
-        ) != -1 and not self.get_argument("noredirect"):
+        ua = self.request.headers.get("User-Agent") or ""
+
+        if ua.lower().find("android") != -1 and not self.get_argument("noredirect"):
             self.redirect("/keys/app")
             return
 
@@ -76,7 +76,7 @@ class AppLogin(api.web.HTMLRequest):
 
     def get(self):
         if not self.user or self.user.is_anonymous():
-            self.redirect("/forums/ucp.php?mode=login&redirect=%s" % self.url)
+            self.redirect("/oauth/login&redirect=%s" % self.url)
             return
 
         self.user.ensure_api_key()

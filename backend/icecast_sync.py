@@ -7,6 +7,7 @@ from libs import config
 from libs import log
 from libs import db
 
+
 class IcecastSyncCall:
     def __init__(self, relay_name, relay_info, ftype, sid):
         self.relay_name = relay_name
@@ -19,10 +20,10 @@ class IcecastSyncCall:
         if not self.response:
             return 0
         listeners = []
-        for listener in (
-            ElementTree.fromstring(self.response).find("source").iter("listener")
-        ):
-            listeners.append(listener)
+        sources = ElementTree.fromstring(self.response).find("source")
+        if sources:
+            for listener in sources.iter("listener"):
+                listeners.append(listener)
         log.debug(
             "icecast_sync",
             "%s %s %s count: %s"
@@ -70,7 +71,7 @@ async def _start():
             auth=aiohttp.BasicAuth(
                 login=relay_info["admin_username"],
                 password=relay_info["admin_password"],
-            )
+            ),
         )
         clients.append(client)
         relay_base_url = "%s%s:%s/admin/listclients?mount=/" % (
@@ -80,9 +81,7 @@ async def _start():
         )
         for sid in relay_info["sids"]:
             for ftype in (".mp3", ".ogg"):
-                call = IcecastSyncCall(
-                    relay, relay_info, ftype, sid
-                )
+                call = IcecastSyncCall(relay, relay_info, ftype, sid)
                 calls.append(call)
                 requests.append(
                     call.request(

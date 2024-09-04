@@ -55,7 +55,9 @@ class WebCreateProducer(api.web.HTMLRequest):
         self.write(self.render_string("basic_footer.html"))
 
 
-class WebListProducersBase:
+class WebListProducersBase(api.web.PrettyPrintAPIMixin):
+    sid: int
+
     # pylint: disable=E1101
     def header_special(self):
         self.write("<th>Time</th><th></th><th></th><th></th><th></th>")
@@ -82,7 +84,6 @@ class WebListProducersBase:
             % row["id"]
         )
 
-
     def sort_keys(self, keys):
         return ["sid", "name", "type", "sched_length_minutes", "url", "username"]
 
@@ -90,9 +91,7 @@ class WebListProducersBase:
 
 
 @handle_url("/admin/album_list/producers")
-class WebListProducers(
-    WebListProducersBase, api.web.PrettyPrintAPIMixin, producers.ListProducers
-):
+class WebListProducers(WebListProducersBase, producers.ListProducers):
     pass
 
 
@@ -102,9 +101,7 @@ class WebCreateProducerAll(WebCreateProducer):
 
 
 @handle_url("/admin/album_list/producers_all")
-class WebListProducersAll(
-    WebListProducersBase, api.web.PrettyPrintAPIMixin, producers.ListProducersAll
-):
+class WebListProducersAll(WebListProducersBase, producers.ListProducersAll):
     pass
 
 
@@ -116,6 +113,8 @@ class WebModifyProducer(api.web.HTMLRequest):
 
     def get(self):
         p = event.BaseProducer.load_producer_by_id(self.get_argument("sched_id"))
+        if not p:
+            raise api.web.APIException("404", http_code=404)
         self.write(self.render_string("bare_header.html", title="%s" % p.name))
         self.write(
             "<h2>%s %s - %s</h2>"

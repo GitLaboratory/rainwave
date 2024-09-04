@@ -65,7 +65,7 @@ class CreateAnonTunedIn(APIHandler):
             )
             return
         raise APIException(
-            500, "internal_error", "Anonymous user tune in record already exists."
+            "internal_error", "Anonymous user tune in record already exists.", 500
         )
 
 
@@ -148,6 +148,6 @@ class CreateLoginTunedOut(TestUserRequest):
             db.c.fetch_var(
                 "SELECT COUNT(*) FROM r4_listeners WHERE user_id = %s", (user_id,)
             )
-            > 0
-        ):
+            or 0
+        ) > 0:
             db.c.update("DELETE FROM r4_listeners WHERE user_id = %s ", (user_id,))
