@@ -426,9 +426,8 @@ def create_tables():
 		CREATE TABLE r4_album_faves ( \
 			album_id				INTEGER		NOT NULL, \
 			user_id					INTEGER		NOT NULL, \
-   			sid						SMALLINT	NOT NULL, \
 			album_fave				BOOLEAN, \
-   			PRIMARY KEY (user_id, album_id, sid)
+   			PRIMARY KEY (user_id, album_id)
 		)"
     )
     c.create_idx(
