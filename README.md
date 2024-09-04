@@ -1,5 +1,3 @@
-# I'll change everything here soon!
-
 # Rainwave Radio Controller
 
 This is the git project for the Rainwave website, https://rainwave.cc.
