@@ -37,7 +37,7 @@ def rw_live_auth(user, password) =
 end
 
 rw_auto = request.dynamic(rw_backend, length=6.0, conservative=false)
-rw_auto = amplify(0.7, override="replay_gain", audio_to_stereo(rw_auto))
+rw_auto = amplify(0.7, override="replay_gain", stereo(rw_auto))
 rw_auto = rewrite_metadata([("title", '$(if $(use_suffix),"$(title) $(suffix)","$(title)")'), ("url", rw_dest_url)], rw_auto)
 
 rw_offline = single(rw_offline_file)
