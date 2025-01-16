@@ -82,13 +82,17 @@ def _bake_css_file(input_filename, output_filename, include_path):
 
 def get_js_file_list(js_dir="js"):
     jsfiles = []
+    main_file = None
     for root, _subdirs, files in os.walk(
         os.path.join(os.path.dirname(__file__), "..", "static", js_dir)
     ):
         for f in files:
-            if f.endswith(".js"):
+            if f.endswith("main.js"):
+                main_file = os.path.join(root[root.find("..") + 3 :], f)
+            elif f.endswith(".js"):
                 jsfiles.append(os.path.join(root[root.find("..") + 3 :], f))
     jsfiles = sorted(jsfiles)
+    jsfiles.insert(0, main_file)
     return jsfiles
 
 
@@ -106,17 +110,17 @@ def bake_js(source_dir="js5", dest_file="script5.js"):
         str(get_build_number()),
         dest_file,
     )
-    if not os.path.exists(fn):
-        js_content = ""
-        for sfn in get_js_file_list(source_dir):
-            jsfile = open(os.path.join(os.path.dirname(__file__), "..", sfn))
-            js_content += jsfile.read() + "\n"
-            jsfile.close()
+    js_content = ""
+    for sfn in get_js_file_list(source_dir):
+        jsfile = open(os.path.join(os.path.dirname(__file__), "..", sfn))
+        js_content += jsfile.read() + "\n"
+        jsfile.close()
 
-        o = open(fn, "w")
-        # Pylint disabled for next line because pylint is buggy about the es5 function
-        o.write(minify_print(es5(js_content)))  # pylint: disable=not-callable
-        o.close()
+    o = open(fn, "w")
+    # Pylint disabled for next line because pylint is buggy about the es5 function
+    o.write(minify_print(es5(js_content)))  # pylint: disable=not-callable
+    o.write("rainwaveInit();")
+    o.close()
 
 
 def bake_templates(
@@ -148,4 +152,45 @@ def bake_beta_templates():
         always_write=True,
         debug_symbols=True,
         full_calls=False,
+    )
+
+
+def build_new_static():
+    baked_dir = os.path.join(os.path.dirname(__file__), "../static/baked/")
+    number_dir = os.path.join(baked_dir, str(get_build_number()))
+    with open(
+        os.path.join(
+            baked_dir,
+            "rainwave.js",
+        ),
+        "w",
+    ) as output:
+        with open(
+            os.path.join(
+                number_dir,
+                "script5.js",
+            )
+        ) as js:
+            output.write(js.read())
+
+        with open(
+            os.path.join(
+                number_dir,
+                "templates5.js",
+            )
+        ) as templates:
+            output.write(templates.read())
+
+        with open(
+            os.path.join(
+                number_dir,
+                "all_languages.js",
+            )
+        ) as all_languages:
+            output.write(all_languages.read())
+
+        output.write("rainwaveInit();")
+
+    shutil.copy(
+        os.path.join(number_dir, "style5.css"), os.path.join(baked_dir, "style.css")
     )
